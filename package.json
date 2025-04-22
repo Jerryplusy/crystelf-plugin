@@ -1,0 +1,29 @@
+{
+  "name": "crystelf-plugin",
+  "version": "1.0.0",
+  "description": "适配crystelf-core的Yunzai插件",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "TRSS-Yunzai",
+    "crystelf-plugin"
+  ],
+  "author": "Jerry",
+  "License": "MIT",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "openai": "^4.89.0"
+  },
+  "imports": {},
+  "devDependencies": {
+    "@eslint/js": "^9.23.0",
+    "eslint": "^8.57.1",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3"
+  }
+}
