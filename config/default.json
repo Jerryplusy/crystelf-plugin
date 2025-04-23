@@ -1,0 +1,33 @@
+{
+  "debug": true,
+  "core": true,
+  "mode": "deepseek",
+  "model_type": "deepseek-ai/DeepSeek-V3",
+  "model_list": {
+    "deepseek-ai/DeepSeek-V3": "V3",
+    "deepseek-ai/DeepSeek-R1": "R1",
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-8B": "L8b",
+    "Qwen/Qwen2.5-7B-Instruct": "Q7b",
+    "internlm/internlm2_5-7b-chat": "I7b",
+    "THUDM/glm-4-9b-chat": "G9b",
+    "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B": "Q14b",
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-70B": "L70b",
+    "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B": "Q32b"
+  },
+  "default_history_length": 3,
+  "default_max_length": 3,
+  "default_temperature": 1,
+  "nickName": "寄气人",
+  "checkChat": {
+    "rdNum": 2,
+    "masterReply": true,
+    "userId": [
+      114514
+    ],
+    "blackGroups": [
+      114,
+      514
+    ]
+  },
+  "max_message_length": 100
+}

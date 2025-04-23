@@ -9,8 +9,10 @@ logger.info(
   chalk.rgb(134, 142, 204)(`crystelf-plugin ${Version.ver} 初始化 ~ by ${Version.author}`)
 );
 
-updater.checkAndUpdate();
-crystelfInit.CSH();
+updater.checkAndUpdate().catch((err) => {
+  logger.err(err);
+});
+await crystelfInit.CSH();
 
 const appPath = Path.apps;
 const jsFiles = fc.readDirRecursive(appPath, 'js');
