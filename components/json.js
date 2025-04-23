@@ -25,7 +25,7 @@ let fc = {
    * @example
    * fc.createDir("config/deepseek", "root") // 在 Yunzai 根目录创建 config/deepseek 目录
    */
-  createDir(path = '', root = '', includeFile = false) {
+  async createDir(path = '', root = '', includeFile = false) {
     root = getRoot(root);
     let pathList = path.split('/');
     let nowPath = root;
@@ -50,7 +50,7 @@ let fc = {
    * @example
    * const config = fc.readJSON("config.json", "root")
    */
-  readJSON(file = '', root = '') {
+  async readJSON(file = '', root = '') {
     root = getRoot(root);
     if (fs.existsSync(`${root}/${file}`)) {
       try {
@@ -62,7 +62,7 @@ let fc = {
     return {};
   },
 
-  statSync(file = '', root = '') {
+  async statSync(file = '', root = '') {
     root = getRoot(root);
     try {
       return fs.statSync(`${root}/${file}`);
@@ -82,8 +82,8 @@ let fc = {
    * @example
    * fc.writeJSON("config.json", {key: "value"}, "root", 4)
    */
-  writeJSON(file, data, root = '', space = 4) {
-    fc.createDir(file, root, true);
+  async writeJSON(file, data, root = '', space = 4) {
+    await fc.createDir(file, root, true);
     root = getRoot(root);
     try {
       fs.writeFileSync(`${root}/${file}`, JSON.stringify(data, null, space));
@@ -108,8 +108,8 @@ let fc = {
    * @example
    * fc.safewriteJSON("config.json", {newKey: "value"})
    */
-  safeWriteJSON(file, data, root = '', space = 4) {
-    fc.createDir(file, root, true);
+  async safeWriteJSON(file, data, root = '', space = 4) {
+    await fc.createDir(file, root, true);
     root = getRoot(root);
     const filePath = `${root}/${file}`;
 
@@ -146,7 +146,7 @@ let fc = {
    * const merged = fc.deepMerge({a: 1}, {b: {c: 2}})
    * // 返回 {a: 1, b: {c: 2}}
    */
-  deepMerge(target, source) {
+  async deepMerge(target, source) {
     for (const key in source) {
       if (source.hasOwnProperty(key)) {
         if (
@@ -155,7 +155,7 @@ let fc = {
           target[key] &&
           typeof target[key] === 'object'
         ) {
-          this.deepMerge(target[key], source[key]);
+          await this.deepMerge(target[key], source[key]);
         } else {
           target[key] = source[key];
         }
@@ -176,7 +176,7 @@ let fc = {
    * @example
    * const jsFiles = fc.readDirRecursive("./plugins", "js", "node_modules")
    */
-  readDirRecursive(directory, extension, excludeDir) {
+  async readDirRecursive(directory, extension, excludeDir) {
     let files = fs.readdirSync(directory);
 
     let jsFiles = files.filter(
@@ -213,7 +213,7 @@ let fc = {
    * const obj = { a: 1, b: [2, 3] };
    * const cloned = fc.deepClone(obj);
    */
-  deepClone(source) {
+  async deepClone(source) {
     const cache = new WeakMap();
 
     const clone = (value) => {
