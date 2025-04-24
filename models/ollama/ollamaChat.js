@@ -45,7 +45,7 @@ class OllamaChat {
         },
       });
 
-      const aiResponse = response.data?.choices[o]?.text || '';
+      const aiResponse = response.data?.choices[0]?.text || '';
 
       return {
         success: true,
