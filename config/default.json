@@ -1,6 +1,13 @@
 {
   "debug": true,
   "core": true,
+  "coreConfig": {
+    "coreUrl": "",
+    "wsUrl": "",
+    "wsClientId": "",
+    "wsSecret": "",
+    "wsReConnectInterval": "5000"
+  },
   "mode": "deepseek",
   "modelType": "deepseek-ai/DeepSeek-V3",
   "historyLength": 3,
