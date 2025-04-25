@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import Version from './lib/system/version.js';
 import fc from './components/json.js';
-import Path from './constants/path.js';
+import Path from './constants/path/path.js';
 import { crystelfInit } from './lib/system/init.js';
 import updater from './lib/system/updater.js';
 
