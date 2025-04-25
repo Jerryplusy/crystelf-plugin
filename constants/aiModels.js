@@ -13,15 +13,16 @@ const aiModels = {
   },
 
   THUDM: {
-    GLM4_32b: 'THUDM/GLM-4-32B-0414', // 1.89/M tokens
-    GLMZ1_32b: 'THUDM/GLM-Z1-32B-0414', // 4/M tokens
+    GLM4_32b: 'THUDM/GLM-4-32B-0414', // 1.89 tokens
+    GLMZ1_32b: 'THUDM/GLM-Z1-32B-0414', // 4 tokens
     GLM4_9b: 'THUDM/GLM-4-9B-0414', //free
   },
 
   Qwen: {
-    Qwen25VL_32b: 'Qwen/Qwen2.5-VL-32B-Instruct', // 视觉
+    Qwen25VL_32b: 'Qwen/Qwen2.5-VL-32B-Instruct', // 4.13 视觉
     QwenQ_32b: 'Qwen/QwQ-32B', //4/M tokens
     Qwen25_72b: 'Qwen/Qwen2.5-72B-Instruct-128K', //4.13
+    QwenQVQ_72b_preview: 'Qwen/QVQ-72B-Preview', //9.9 视觉
   },
 };
 
