@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import configControl from '../../lib/config/configControl.js';
+import handler from './handler.js';
 
 class WsClient {
   constructor() {
@@ -23,7 +24,7 @@ class WsClient {
       this.clientId = configControl.get('coreConfig')?.wsClientId;
       this.reconnectInterval = configControl.get('coreConfig')?.wsReConnectInterval;
 
-      logger.info(this.wsURL);
+      //logger.info(this.wsURL);
       this.ws = new WebSocket(this.wsURL);
 
       this.ws.on('open', () => {
@@ -34,7 +35,7 @@ class WsClient {
       this.ws.on('message', (raw) => {
         try {
           const data = JSON.parse(raw);
-          this.handleMessage(data);
+          handler.handle(this, data);
         } catch (err) {
           logger.err(err);
         }
@@ -67,27 +68,6 @@ class WsClient {
       this.ws.send(JSON.stringify(msg));
     } else {
       logger.warn('crystelf WS 服务器未连接，无法发送消息..');
-    }
-  }
-
-  async handleMessage(msg) {
-    switch (msg.type) {
-      case 'auth':
-        if (msg.success) {
-          logger.mark('crystelf WS 认证成功..');
-        } else {
-          logger.error('crystelf WS 认证失败，关闭连接..');
-          this.ws.close(4001, '认证失败');
-        }
-        break;
-      case 'ping':
-        await this.sendMessage({ type: 'pong' });
-        break;
-      case 'message':
-        logger.mark(`服务端消息: ${msg.data}`);
-        break;
-      default:
-        logger.warn(`未知消息类型: ${msg.type}`);
     }
   }
 

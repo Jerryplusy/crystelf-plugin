@@ -1,6 +1,6 @@
-import path from 'path';
 import url from 'url';
 import fs from 'fs';
+import path from 'path';
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +18,7 @@ const Path = {
   index: path.join(rootDir, 'index.js'),
   pkg: path.join(rootDir, 'package.json'),
   yunzai: path.join(rootDir, '../../'),
+  data: path.join(rootDir, '../../data/crystelf/data'),
 };
 
 const configFile = fs.readFileSync(Path.defaultConfig, 'utf8');
