@@ -66,8 +66,10 @@ class WsClient {
   async sendMessage(msg) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
+      return true;
     } else {
       logger.warn('crystelf WS 服务器未连接，无法发送消息..');
+      return false;
     }
   }
 
