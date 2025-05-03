@@ -1,3 +1,6 @@
+import botControl from '../../lib/core/botControl.js';
+import wsClient from './wsClient.js';
+
 class Handler {
   constructor() {
     this.handlers = new Map([
@@ -5,6 +8,7 @@ class Handler {
       ['ping', this.handlePing.bind(this)],
       ['message', this.handleMessageFromServer.bind(this)],
       ['error', this.handleError.bind(this)],
+      ['getGroupInfo', this.handleGetGroupInfo.bind(this)],
     ]);
   }
 
@@ -36,6 +40,34 @@ class Handler {
 
   async handleError(client, msg) {
     logger.warn(`crystelf WS 错误:${msg.data}`);
+  }
+
+  /*
+  获取群聊信息，自动回调
+  @examples 请求示例
+  ```json
+  {
+  requestId: 114514,
+  type: 'getGroupInfo',
+  data: {
+    botId: 114514,
+    groupId: 114514,
+    },
+  }
+  ```
+   */
+  async handleGetGroupInfo(client, msg) {
+    const requestId = msg?.requestId;
+    const botId = msg.data?.botId;
+    const groupId = msg.data?.groupId;
+    const type = msg.type + 'Return';
+    const groupData = await botControl.getGroupInfo(botId, groupId);
+    const returnData = {
+      type: type,
+      requestId: requestId,
+      data: groupData,
+    };
+    await wsClient.sendMessage(returnData);
   }
 }
 

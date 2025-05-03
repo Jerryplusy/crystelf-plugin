@@ -63,6 +63,11 @@ class WsClient {
     await this.sendMessage(authMsg);
   }
 
+  /**
+   * 发送信息到ws服务端，自动格式化
+   * @param msg
+   * @returns {Promise<boolean>}
+   */
   async sendMessage(msg) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
