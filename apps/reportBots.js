@@ -14,7 +14,7 @@ export default class ReportBots extends plugin {
       ],
       task: {
         name: 'crystelf定时同步',
-        corn: '0 */30 * * * *',
+        corn: '*/30 * * * *',
         fnc: 'autoReport',
       },
     });
