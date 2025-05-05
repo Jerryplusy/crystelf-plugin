@@ -12,11 +12,13 @@ export default class ReportBots extends plugin {
           permission: 'master',
         },
       ],
-      task: {
-        name: 'crystelf定时同步',
-        corn: '*/30 * * * *',
-        fnc: 'autoReport',
-      },
+      task: [
+        {
+          name: 'crystelf定时同步',
+          corn: '*/30 * * * *',
+          fnc: 'autoReport',
+        },
+      ],
     });
   }
 
