@@ -175,9 +175,9 @@ export class xzq extends plugin {
       true
     );
     if (!e.isMaster) {
-      if (
-        !(e.isGroup && redis.get(`fqxzq:g:${e.group_id})` || !redis.get(`fqxzq:u:${e.user_id}`)))
-      ) {
+      const groupAllow = e.isGroup ? await redis.get(`fqxzq:g:${e.group_id}`) : null;
+      const userAllow = await redis.get(`fqxzq:u:${e.user_id}`);
+      if (!groupAllow && !userAllow) {
         return false;
       }
     }
@@ -223,14 +223,14 @@ export class xzq extends plugin {
     try {
       let res;
       if (e.isGroup) {
-        res = await e.bot.sendApi('upload_group_file', {
+        res = this.e.bot.sendApi('upload_group_file', {
           group_id: e.group_id,
           file: filePath,
           name: bookInfo.book_name,
           folder: 'fanqie',
         });
       } else if (e.friend) {
-        res = await e.bot.sendApi('upload_private_file', {
+        res = e.bot.sendApi('upload_private_file', {
           user_id: e.user_id,
           file: filePath,
           name: bookInfo.book_name,
