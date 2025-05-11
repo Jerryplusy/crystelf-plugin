@@ -175,9 +175,9 @@ export class xzq extends plugin {
       true
     );
     if (!e.isMaster) {
-      if (
-        !(e.isGroup && redis.get(`fqxzq:g:${e.group_id})` || !redis.get(`fqxzq:u:${e.user_id}`)))
-      ) {
+      const groupAllow = e.isGroup ? await redis.get(`fqxzq:g:${e.group_id}`) : null;
+      const userAllow = await redis.get(`fqxzq:u:${e.user_id}`);
+      if (!groupAllow && !userAllow) {
         return false;
       }
     }
