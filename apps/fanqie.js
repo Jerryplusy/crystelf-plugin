@@ -207,7 +207,7 @@ export class xzq extends plugin {
       e.reply('下载超时', true);
       return true;
     }
-    ok = await this.upload(e, file);
+    ok = await this.upload(e, file, book_info);
     if (!ok) {
       this.clearCache(false, true, String(e.message_id));
       e.reply('上传失败', true);
@@ -219,14 +219,22 @@ export class xzq extends plugin {
       true
     );
   }
-  async upload(e, filePath) {
+  async upload(e, filePath, bookInfo) {
     try {
       let res;
       if (e.isGroup) {
-        if (e.group.sendFile) res = await e.group.sendFile(filePath);
-        else if (e.group.fs && e.group.fs.upload) res = await e.group.fs.upload(filePath);
-      } else if (e.friend && e.friend.sendFile) {
-        res = await e.friend.sendFile(filePath);
+        res = e.bot.sendApi('upload_group_file', {
+          group_id: e.group_id,
+          file: filePath,
+          name: bookInfo.book_name,
+          folder: 'fanqie',
+        });
+      } else if (e.friend) {
+        res = e.bot.sendApi('upload_private_file', {
+          user_id: e.user_id,
+          file: filePath,
+          name: bookInfo.book_name,
+        });
       }
       if (res) {
         return true;
