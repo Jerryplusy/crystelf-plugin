@@ -1,138 +1,240 @@
-import path from 'path';
 import fs from 'node:fs';
-import Fanqie from './fanqie.js';
+import path from 'path';
+import chokidar from 'chokidar';
 import ConfigControl from '../lib/config/configControl.js';
+import Fanqie from '../models/apps/fanqie/fanqie.js';
 
 let redis = global.redis;
 
-const outDir = await ConfigControl.get('fanqieConfig')?.outDir;
-const apiurl = await ConfigControl.get('fanqieConfig')?.url;
-let fq = new Fanqie(apiurl);
-
-function clearCache(e, isTask = false, sessionId = null) {
-  const dir = path.join(outDir, 'fanqie');
-  if (sessionId) {
-    const cdir = path.join(outDir, 'files', sessionId);
-    if (fs.existsSync(cdir)) {
-      fs.rmSync
-        ? fs.rmSync(cdir, { recursive: true, force: true })
-        : fs.rmdirSync(cdir, { recursive: true });
-    }
-    return true;
+export class xzq extends plugin {
+  constructor() {
+    super({
+      name: 'fanqie',
+      dsc: 'fq下载器',
+      event: 'message',
+      priority: -114,
+      rule: [
+        {
+          reg: '(changdunovel.com/wap/share-v2.html|fanqienovel.com/page)',
+          fnc: 'jx',
+        },
+        {
+          reg: '#?fq下载(.*)',
+          fnc: 'byid',
+        },
+        {
+          reg: '^fq(允许|禁止)(群|用户)使用',
+          fnc: 'control',
+        },
+        {
+          reg: '^fq清(理|除|空)缓存$',
+          fnc: 'clearCache',
+        },
+      ],
+    });
+    this.initConfigPromise = this.initConfig();
+    this.fq = null;
+    this.task = {
+      cron: '0 0 16 * * ?',
+      name: 'fq自动清理缓存',
+      fnc: () => this.clearCache(false, true),
+    };
   }
 
-  if (fs.existsSync(dir)) {
-    const files = fs.readdirSync(dir);
-    for (const file of files) {
-      const filePath = path.join(dir, file);
-      const stat = fs.statSync(filePath);
-      if (stat.isDirectory()) {
-        fs.rmSync
-          ? fs.rmSync(filePath, { recursive: true, force: true })
-          : fs.rmdirSync(filePath, { recursive: true });
-      } else {
-        fs.unlinkSync(filePath);
+  async initConfig() {
+    this.outDir = await ConfigControl.get('fanqieConfig')?.outDir;
+    this.apiurl = await ConfigControl.get('fanqieConfig')?.url;
+    this.fq = new Fanqie(this.apiurl);
+  }
+
+  async listen_outdir(dir, timeout = 30000) {
+    if (!dir) return false;
+    return new Promise((resolve, reject) => {
+      const watcher = chokidar.watch(dir, {
+        persistent: true,
+        ignoreInitial: true,
+      });
+      let timer = setTimeout(() => {
+        watcher.close();
+        resolve(false);
+      }, timeout);
+      watcher.on('add', (filePath) => {
+        clearTimeout(timer);
+        watcher.close();
+        resolve(filePath);
+      });
+      console.log(`已开始监听目录: ${dir}`);
+    });
+  }
+  async clearCache(e, is_task = false, zd = false) {
+    if (!is_task && (!e || !e.isMaster)) {
+      if (e) e.reply('你没有权限使用此功能', true);
+      return false;
+    }
+    if (!this.outDir) {
+      if (this.initConfigPromise) {
+        await this.initConfigPromise;
+      }
+      if (!this.outDir) {
+        if (e) e.reply('缓存目录未初始化，无法清理缓存', true);
+        return false;
       }
     }
-  }
-  if (!isTask && e) e.reply('缓存已清理', true);
-  return true;
-}
-
-async function upload(e, filePath) {
-  try {
-    let res;
-    if (e.isGroup) {
-      res = e.group.sendFile
-        ? await e.group.sendFile(filePath)
-        : await e.group.fs?.upload?.(filePath);
-    } else {
-      res = await e.friend?.sendFile?.(filePath);
+    const dir = path.join(this.outDir, 'fanqie');
+    if (zd) {
+      const cdir = path.join(this.outDir, 'files', zd);
+      if (!fs.existsSync(cdir)) {
+        if (e) e.reply('目录不存在', true);
+        return false;
+      }
+      if (fs.rmSync) {
+        fs.rmSync(cdir, { recursive: true, force: true });
+      } else {
+        fs.rmdirSync(cdir, { recursive: true });
+      }
     }
-    return !!res;
-  } catch (err) {
-    logger.error(`上传失败：${err.stack}`);
-    e.reply(`上传失败：${err.stack}`);
-    return false;
+    if (fs.existsSync(dir)) {
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        if (stat.isDirectory()) {
+          if (fs.rmSync) {
+            fs.rmSync(filePath, { recursive: true, force: true });
+          } else {
+            fs.rmdirSync(filePath, { recursive: true });
+          }
+        } else {
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+    if (!is_task && e) e.reply('缓存已清理', true);
+    return true;
   }
-}
-
-export default {
-  name: 'fanqie',
-  desc: '番茄小说下载',
-  event: 'message',
-  priority: -114,
-  rule: [
-    {
-      reg: '(changdunovel.com/wap/share-v2.html|fanqienovel.com/page)',
-      fnc: 'handleJX',
-    },
-    {
-      reg: '#?fq下载(.*)',
-      fnc: 'handleID',
-    },
-    {
-      reg: '^fq(允许|禁止)(群|用户)使用',
-      fnc: 'handleControl',
-    },
-    {
-      reg: '^fq清(理|除|空)缓存$',
-      fnc: 'handleClear',
-    },
-  ],
-  async handleJX(e) {
-    const msg = e.msg.trim();
-    const book_id = msg.includes('changdunovel')
-      ? msg.match(/book_id=(\d+)/)?.[1]
-      : msg.match(/page\/(\d+)/)?.[1];
-    if (!book_id) return e.reply('无法识别ID');
-    return this.handleDownload(e, book_id);
-  },
-  async handleID(e) {
-    const id = e.msg
-      .trim()
-      .replace(/^#?fq下载/, '')
-      .trim();
-    return this.handleDownload(e, id);
-  },
-  async handleControl(e) {
-    if (!e.isMaster) return e.reply('你没有权限使用此功能');
-    let id = e.msg.trim().replace(/^fq(允许|禁止)(群|用户)使用/, '') || e.group_id;
-    const key = e.msg.includes('群') ? `fqxzq:g:${id}` : `fqxzq:u:${id}`;
-    redis.set(key, e.msg.includes('允许'));
-    e.reply(
-      `已${e.msg.includes('允许') ? '允许' : '禁止'}${e.msg.includes('群') ? '群' : '用户'} ${id} 使用`,
-      true
-    );
-  },
-  async handleClear(e) {
-    if (!e.isMaster) return e.reply('你没有权限使用此功能');
-    clearCache(e);
-  },
-  async handleDownload(e, book_id) {
-    const book_info = await fq.get_info(book_id);
-    if (!book_info) return e.reply('获取信息失败');
-    e.reply(
-      `识别: [番茄小说]《${book_info.book_name}》\n作者: ${book_info.author}\n原名: ${book_info.original_book_name}`,
-      true
-    );
-
+  async control(e) {
     if (!e.isMaster) {
-      const groupAllow = await redis.get(`fqxzq:g:${e.group_id}`);
-      const userDeny = await redis.get(`fqxzq:u:${e.user_id}`);
-      if (!groupAllow || userDeny) return;
+      e.reply('你没有权限使用此功能', true);
+      return false;
     }
-
-    e.reply('开始下载，请稍等...');
-    const ok = await fq.down(book_id, e.message_id);
-    if (!ok) return e.reply('下载失败');
-
-    const file = await fq.listen_outdir(path.join(outDir, 'files', String(e.message_id)));
-    if (!file) return e.reply('下载超时');
-
-    const success = await upload(e, file);
-    clearCache(null, true, String(e.message_id));
-    if (!success) return e.reply('上传失败');
-    e.reply(`《${book_info.book_name}》上传成功！`, true);
-  },
-};
+    let id = e.msg.trim().replace(/^fq(允许|禁止)(群|用户)使用/, '');
+    if (id == '') {
+      id = e.group_id;
+    }
+    if (e.msg.includes('群')) {
+      if (e.msg.includes('允许')) {
+        redis.set(`fqxzq:g:${id}`, true);
+        e.reply(`已允许群${id}使用此功能`, true);
+      } else {
+        redis.set(`fqxzq:g:${id}`, false);
+        e.reply(`已禁止群${id}使用此功能`, true);
+      }
+    } else {
+      if (e.msg.includes('允许')) {
+        redis.set(`fqxzq:u:${id}`, true);
+        e.reply(`已允许用户${id}使用此功能`, true);
+      } else {
+        redis.set(`fqxzq:u:${id}`, false);
+        e.reply(`已禁止用户${id}使用此功能`, true);
+      }
+      return true;
+    }
+  }
+  async byid(e) {
+    let msg = e.msg.trim();
+    let book_id = msg.replace('#?fq下载', '').trim();
+    return this.xz(e, book_id);
+  }
+  async jx(e) {
+    let book_id,
+      msg = e.msg.trim();
+    if (msg.includes('changdunovel.com/wap/share-v2.html')) {
+      book_id = msg.match(/book_id=(\d+)/)[1];
+    } else {
+      book_id = msg.match(/page\/(\d+)/)[1];
+    }
+    return this.xz(e, book_id);
+  }
+  async xz(e, id) {
+    await this.initConfigPromise;
+    let book_id = id;
+    let book_info;
+    try {
+      book_info = await this.fq.get_info(book_id);
+    } catch (err) {
+      logger.error(err);
+      e.reply('获取信息失败', true);
+      return true;
+    }
+    if (!book_info) {
+      e.reply('获取信息失败', true);
+      return true;
+    }
+    e.reply(
+      `识别:[番茄小说]《${book_info.book_name}》\n作者:${book_info.author}\n原名:${book_info.original_book_name}`,
+      true
+    );
+    if (!e.isMaster) {
+      if (
+        !(e.isGroup && redis.get(`fqxzq:g:${e.group_id})` || !redis.get(`fqxzq:u:${e.user_id}`)))
+      ) {
+        return false;
+      }
+    }
+    e.reply('开始下载,请稍等', true);
+    let starttime = Date.now();
+    let ok;
+    try {
+      ok = await this.fq.down(book_id, e.message_id);
+    } catch (err) {
+      logger.error(err);
+      e.reply('下载失败', true);
+      return true;
+    }
+    if (!ok) {
+      e.reply('下载失败', true);
+      return true;
+    }
+    let file;
+    try {
+      file = await this.listen_outdir(path.join(this.outDir, 'files', String(e.message_id)));
+    } catch (err) {
+      logger.error(err);
+      e.reply('下载超时', true);
+      return true;
+    }
+    if (!file) {
+      e.reply('下载超时', true);
+      return true;
+    }
+    ok = await this.upload(e, file);
+    if (!ok) {
+      this.clearCache(false, true, String(e.message_id));
+      e.reply('上传失败', true);
+      return true;
+    }
+    this.clearCache(false, true, String(e.message_id));
+    e.reply(
+      `《${book_info.book_name}》上传成功,总用时:${((Date.now() - starttime) / 1000).toFixed(2)}s`,
+      true
+    );
+  }
+  async upload(e, filePath) {
+    try {
+      let res;
+      if (e.isGroup) {
+        if (e.group.sendFile) res = await e.group.sendFile(filePath);
+        else if (e.group.fs && e.group.fs.upload) res = await e.group.fs.upload(filePath);
+      } else if (e.friend && e.friend.sendFile) {
+        res = await e.friend.sendFile(filePath);
+      }
+      if (res) {
+        return true;
+      }
+    } catch (err) {
+      logger.error(`文件上传错误：${logger.red(err.stack)}`);
+      if (e && e.reply) await e.reply(`文件上传错误：${err.stack}`);
+      return false;
+    }
+  }
+}
