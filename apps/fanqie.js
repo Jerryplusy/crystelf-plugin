@@ -49,12 +49,12 @@ export class xzq extends plugin {
 
   async listen_outdir(dir, timeout = 30000) {
     if (!dir) return false;
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const watcher = chokidar.watch(dir, {
         persistent: true,
         ignoreInitial: true,
       });
-      let timer = setTimeout(() => {
+      const timer = setTimeout(() => {
         watcher.close();
         resolve(false);
       }, timeout);
@@ -66,182 +66,160 @@ export class xzq extends plugin {
       console.log(`已开始监听目录: ${dir}`);
     });
   }
+
   async clearCache(e, is_task = false, zd = false) {
     if (!is_task && (!e || !e.isMaster)) {
       if (e) e.reply('你没有权限使用此功能', true);
       return false;
     }
     if (!this.outDir) {
-      if (this.initConfigPromise) {
-        await this.initConfigPromise;
-      }
+      await this.initConfigPromise;
       if (!this.outDir) {
         if (e) e.reply('缓存目录未初始化，无法清理缓存', true);
         return false;
       }
     }
-    const dir = path.join(this.outDir, 'fanqie');
+
     if (zd) {
-      const cdir = path.join(this.outDir, 'files', zd);
-      if (!fs.existsSync(cdir)) {
-        if (e) e.reply('目录不存在', true);
-        return false;
-      }
-      if (fs.rmSync) {
-        fs.rmSync(cdir, { recursive: true, force: true });
-      } else {
-        fs.rmdirSync(cdir, { recursive: true });
+      const targetDir = path.join(this.outDir, 'files', zd);
+      if (fs.existsSync(targetDir)) {
+        fs.rmSync(targetDir, { recursive: true, force: true });
       }
     }
-    if (fs.existsSync(dir)) {
-      const files = fs.readdirSync(dir);
-      for (const file of files) {
-        const filePath = path.join(dir, file);
-        const stat = fs.statSync(filePath);
+
+    const fanqieDir = path.join(this.outDir, 'fanqie');
+    if (fs.existsSync(fanqieDir)) {
+      fs.readdirSync(fanqieDir).forEach((file) => {
+        const fullPath = path.join(fanqieDir, file);
+        const stat = fs.statSync(fullPath);
         if (stat.isDirectory()) {
-          if (fs.rmSync) {
-            fs.rmSync(filePath, { recursive: true, force: true });
-          } else {
-            fs.rmdirSync(filePath, { recursive: true });
-          }
+          fs.rmSync(fullPath, { recursive: true, force: true });
         } else {
-          fs.unlinkSync(filePath);
+          fs.unlinkSync(fullPath);
         }
-      }
+      });
     }
+
     if (!is_task && e) e.reply('缓存已清理', true);
     return true;
   }
+
   async control(e) {
-    if (!e.isMaster) {
-      e.reply('你没有权限使用此功能', true);
-      return false;
-    }
-    let id = e.msg.trim().replace(/^fq(允许|禁止)(群|用户)使用/, '');
-    if (id == '') {
-      id = e.group_id;
-    }
-    if (e.msg.includes('群')) {
-      if (e.msg.includes('允许')) {
-        redis.set(`fqxzq:g:${id}`, true);
-        e.reply(`已允许群${id}使用此功能`, true);
-      } else {
-        redis.set(`fqxzq:g:${id}`, false);
-        e.reply(`已禁止群${id}使用此功能`, true);
-      }
-    } else {
-      if (e.msg.includes('允许')) {
-        redis.set(`fqxzq:u:${id}`, true);
-        e.reply(`已允许用户${id}使用此功能`, true);
-      } else {
-        redis.set(`fqxzq:u:${id}`, false);
-        e.reply(`已禁止用户${id}使用此功能`, true);
-      }
-      return true;
-    }
+    if (!e.isMaster) return e.reply('你没有权限使用此功能', true);
+
+    let id = e.msg.trim().replace(/^fq(允许|禁止)(群|用户)使用/, '') || e.group_id;
+    const keyPrefix = e.msg.includes('群') ? 'g' : 'u';
+    const key = `fqxzq:${keyPrefix}:${id}`;
+    const allow = e.msg.includes('允许');
+
+    await redis.set(key, allow);
+    e.reply(
+      `已${allow ? '允许' : '禁止'}${keyPrefix === 'g' ? '群' : '用户'}${id}使用此功能`,
+      true
+    );
+    return true;
   }
+
   async byid(e) {
-    let msg = e.msg.trim();
-    let book_id = msg.replace('#?fq下载', '').trim();
+    const book_id = e.msg
+      .trim()
+      .replace(/^#?fq下载/, '')
+      .trim();
     return this.xz(e, book_id);
   }
+
   async jx(e) {
-    let book_id,
-      msg = e.msg.trim();
-    if (msg.includes('changdunovel.com/wap/share-v2.html')) {
-      book_id = msg.match(/book_id=(\d+)/)[1];
-    } else {
-      book_id = msg.match(/page\/(\d+)/)[1];
+    const msg = e.msg.trim();
+    let book_id = null;
+    try {
+      if (msg.includes('changdunovel.com')) {
+        book_id = msg.match(/book_id=(\d+)/)[1];
+      } else {
+        book_id = msg.match(/page\/(\d+)/)[1];
+      }
+    } catch {
+      return e.reply('链接解析失败，请检查链接是否正确', true);
     }
     return this.xz(e, book_id);
   }
+
   async xz(e, id) {
     await this.initConfigPromise;
-    let book_id = id;
     let book_info;
     try {
-      book_info = await this.fq.get_info(book_id);
+      book_info = await this.fq.get_info(id);
     } catch (err) {
       logger.error(err);
-      e.reply('获取信息失败', true);
-      return true;
+      return e.reply('获取信息失败', true);
     }
-    if (!book_info) {
-      e.reply('获取信息失败', true);
-      return true;
-    }
+
+    if (!book_info) return e.reply('获取信息失败', true);
+
     e.reply(
       `识别:[番茄小说]《${book_info.book_name}》\n作者:${book_info.author}\n原名:${book_info.original_book_name}`,
       true
     );
+
     if (!e.isMaster) {
-      const groupAllow = e.isGroup ? await redis.get(`fqxzq:g:${e.group_id}`) : null;
-      const userAllow = await redis.get(`fqxzq:u:${e.user_id}`);
-      if (!groupAllow && !userAllow) {
-        return false;
+      const allowGroup = e.isGroup ? await redis.get(`fqxzq:g:${e.group_id}`) : null;
+      const allowUser = await redis.get(`fqxzq:u:${e.user_id}`);
+      if (!allowGroup && !allowUser) return false;
+    }
+
+    e.reply('开始下载，请稍等', true);
+    const startTime = Date.now();
+
+    try {
+      await this.fq.down(id, e.message_id);
+    } catch (err) {
+      logger.error(err);
+      return e.reply('下载失败', true);
+    }
+
+    const outPath = path.join(this.outDir, 'files', String(e.message_id));
+    let filePath = await this.listen_outdir(outPath);
+    if (!filePath) return e.reply('下载超时', true);
+
+    const safeFilePath = filePath.replace(/ /g, '_');
+    if (filePath !== safeFilePath) {
+      try {
+        fs.renameSync(filePath, safeFilePath);
+        filePath = safeFilePath;
+      } catch (err) {
+        logger.error(`重命名文件失败：${err.stack}`);
+        return e.reply('文件重命名失败', true);
       }
     }
-    e.reply('开始下载,请稍等', true);
-    let starttime = Date.now();
-    let ok;
-    try {
-      ok = await this.fq.down(book_id, e.message_id);
-    } catch (err) {
-      logger.error(err);
-      e.reply('下载失败', true);
-      return true;
-    }
-    if (!ok) {
-      e.reply('下载失败', true);
-      return true;
-    }
-    let file;
-    try {
-      file = await this.listen_outdir(path.join(this.outDir, 'files', String(e.message_id)));
-    } catch (err) {
-      logger.error(err);
-      e.reply('下载超时', true);
-      return true;
-    }
-    if (!file) {
-      e.reply('下载超时', true);
-      return true;
-    }
-    ok = await this.upload(e, file, book_info);
-    if (!ok) {
-      this.clearCache(false, true, String(e.message_id));
-      e.reply('上传失败', true);
-      return true;
-    }
+
+    const uploadOk = await this.upload(e, filePath);
     this.clearCache(false, true, String(e.message_id));
-    e.reply(
-      `《${book_info.book_name}》上传成功,总用时:${((Date.now() - starttime) / 1000).toFixed(2)}s`,
-      true
-    );
+    if (!uploadOk) return e.reply('上传失败', true);
+
+    e.reply(`《${book_info.book_name}》上传成功，用时 ${(Date.now() - startTime) / 1000}s`, true);
+    return true;
   }
-  async upload(e, filePath, bookInfo) {
+
+  async upload(e, filePath) {
     try {
       let res;
       if (e.isGroup) {
-        res = this.e.bot.sendApi('upload_group_file', {
+        res = e.bot.sendApi('upload_group_file', {
           group_id: e.group_id,
           file: filePath,
-          name: bookInfo.book_name,
+          name: path.basename(filePath),
           folder: 'fanqie',
         });
       } else if (e.friend) {
         res = e.bot.sendApi('upload_private_file', {
           user_id: e.user_id,
           file: filePath,
-          name: bookInfo.book_name,
+          name: path.basename(filePath),
         });
       }
-      if (res) {
-        return true;
-      }
+      return !!res;
     } catch (err) {
       logger.error(`文件上传错误：${logger.red(err.stack)}`);
-      if (e && e.reply) await e.reply(`文件上传错误：${err.stack}`);
+      if (e?.reply) e.reply(`文件上传失败：${err.message}`, true);
       return false;
     }
   }
