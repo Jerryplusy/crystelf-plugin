@@ -223,14 +223,14 @@ export class xzq extends plugin {
     try {
       let res;
       if (e.isGroup) {
-        res = e.bot.sendApi('upload_group_file', {
+        res = await e.bot.sendApi('upload_group_file', {
           group_id: e.group_id,
           file: filePath,
           name: bookInfo.book_name,
           folder: 'fanqie',
         });
       } else if (e.friend) {
-        res = e.bot.sendApi('upload_private_file', {
+        res = await e.bot.sendApi('upload_private_file', {
           user_id: e.user_id,
           file: filePath,
           name: bookInfo.book_name,
