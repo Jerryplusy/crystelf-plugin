@@ -6,7 +6,12 @@
     "wsUrl": "",
     "wsClientId": "",
     "wsSecret": "",
-    "wsReConnectInterval": "5000"
+    "wsReConnectInterval": "5000",
+    "token": ""
+  },
+  "fanqieConfig": {
+    "url": "http://127.0.0.1:6868",
+    "outDir": "/home/user/debian/cache/Downloads"
   },
   "mode": "deepseek",
   "modelType": "deepseek-ai/DeepSeek-V3",
