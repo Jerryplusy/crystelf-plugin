@@ -5,6 +5,7 @@ import ConfigControl from '../lib/config/configControl.js';
 import configControl from '../lib/config/configControl.js';
 import Fanqie from '../models/apps/fanqie/fanqie.js';
 import axios from 'axios';
+import FormData from 'form-data';
 
 let redis = global.redis;
 
@@ -195,7 +196,7 @@ export class xzq extends plugin {
 
     const uploadReturn = await this.upload(e, filePath);
     await this.clearCache(false, true, String(e.message_id));
-    if (!uploadOk) return e.reply('上传失败', true);
+    if (!uploadReturn) return e.reply('上传失败', true);
 
     e.reply(
       `《${book_info.book_name}》上传成功，用时 ${(Date.now() - startTime) / 1000}s\n下载链接为${uploadReturn.url},将在10分钟后删除，请及时下载`
