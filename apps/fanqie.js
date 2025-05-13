@@ -2,7 +2,10 @@ import fs from 'node:fs';
 import path from 'path';
 import chokidar from 'chokidar';
 import ConfigControl from '../lib/config/configControl.js';
+import configControl from '../lib/config/configControl.js';
 import Fanqie from '../models/apps/fanqie/fanqie.js';
+import FromData from 'form-data';
+import axios from 'axios';
 
 let redis = global.redis;
 
@@ -191,16 +194,19 @@ export class xzq extends plugin {
       }
     }
 
-    const uploadOk = await this.upload(e, filePath);
-    this.clearCache(false, true, String(e.message_id));
+    const uploadReturn = await this.upload(e, filePath);
+    await this.clearCache(false, true, String(e.message_id));
     if (!uploadOk) return e.reply('上传失败', true);
 
-    e.reply(`《${book_info.book_name}》上传成功，用时 ${(Date.now() - startTime) / 1000}s`, true);
+    e.reply(
+      `《${book_info.book_name}》上传成功，用时 ${(Date.now() - startTime) / 1000}s\n下载链接为${uploadReturn.url},将在10分钟后删除，请及时下载`
+    );
     return true;
   }
 
   async upload(e, filePath) {
     try {
+      /*
       let res;
       if (e.isGroup) {
         res = e.bot.sendApi('upload_group_file', {
@@ -217,10 +223,28 @@ export class xzq extends plugin {
         });
       }
       return !!res;
+       */
+      const form = new FromData();
+      const fileStream = fs.createReadStream(filePath);
+      form.append('file', fileStream);
+      form.append('token', configControl.get('coreConfig')?.token);
+      const uploadUrl = `${configControl.get('coreConfig')?.coreUrl}/upload?dir=fanqie&expire=600`;
+      const response = await axios.post(uploadUrl, form, {
+        headers: {
+          ...form.getHeaders(),
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+      });
+      if (response?.success) {
+        const url = response.data?.url;
+        const message = response.data?.message;
+        return { url, message };
+      }
     } catch (err) {
       logger.error(`文件上传错误：${logger.red(err.stack)}`);
-      if (e?.reply) e.reply(`文件上传失败：${err.message}`, true);
-      return false;
+      e.reply(`文件上传失败：${err.message}`, true);
+      return null;
     }
   }
 }
