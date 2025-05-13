@@ -4,7 +4,6 @@ import chokidar from 'chokidar';
 import ConfigControl from '../lib/config/configControl.js';
 import configControl from '../lib/config/configControl.js';
 import Fanqie from '../models/apps/fanqie/fanqie.js';
-import FromData from 'form-data';
 import axios from 'axios';
 
 let redis = global.redis;
@@ -224,7 +223,7 @@ export class xzq extends plugin {
       }
       return !!res;
        */
-      const form = new FromData();
+      const form = new FormData();
       const fileStream = fs.createReadStream(filePath);
       form.append('file', fileStream);
       form.append('token', configControl.get('coreConfig')?.token);
