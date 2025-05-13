@@ -225,7 +225,15 @@ export class xzq extends plugin {
       return !!res;
        */
       const form = new FormData();
+      if (!fs.existsSync(filePath)) {
+        logger.error(`文件不存在：${filePath}`);
+        e.reply(`文件上传失败`, true);
+        return;
+      }
       const fileStream = fs.createReadStream(filePath);
+      fileStream.on('error', (err) => {
+        logger.error('文件读取错误：', err);
+      });
       form.append('file', fileStream);
       form.append('token', configControl.get('coreConfig')?.token);
       const uploadUrl = `${configControl.get('coreConfig')?.coreUrl}/public/upload?dir=fanqie&expire=600`;
