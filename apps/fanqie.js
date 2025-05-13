@@ -228,7 +228,7 @@ export class xzq extends plugin {
       const fileStream = fs.createReadStream(filePath);
       form.append('file', fileStream);
       form.append('token', configControl.get('coreConfig')?.token);
-      const uploadUrl = `${configControl.get('coreConfig')?.coreUrl}/upload?dir=fanqie&expire=600`;
+      const uploadUrl = `${configControl.get('coreConfig')?.coreUrl}/public/upload?dir=fanqie&expire=600`;
       const response = await axios.post(uploadUrl, form, {
         headers: {
           ...form.getHeaders(),
