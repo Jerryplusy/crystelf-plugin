@@ -6,6 +6,7 @@ import configControl from '../lib/config/configControl.js';
 import Fanqie from '../models/apps/fanqie/fanqie.js';
 import axios from 'axios';
 import FormData from 'form-data';
+import { finished } from 'stream/promises';
 
 let redis = global.redis;
 
@@ -236,6 +237,7 @@ export class xzq extends plugin {
       });
       form.append('file', fileStream);
       form.append('token', configControl.get('coreConfig')?.token);
+      await finished(fileStream);
       const uploadUrl = `${configControl.get('coreConfig')?.coreUrl}/public/upload?dir=fanqie&expire=600`;
       const response = await axios.post(uploadUrl, form, {
         headers: form.getHeaders(),
