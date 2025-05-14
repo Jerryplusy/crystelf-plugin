@@ -11,6 +11,7 @@ class Handler {
       ['getGroupInfo', this.handleGetGroupInfo.bind(this)],
       ['sendMessage', this.handleSendMessage.bind(this)],
       ['broadcastMessage', this.broadcastMessage.bind(this)],
+      ['reportBots', this.reportBots.bind(this)],
     ]);
   }
 
@@ -94,6 +95,10 @@ class Handler {
   async broadcastMessage(client, msg) {
     const message = msg.data?.message;
     await botControl.broadcastMessage(message);
+  }
+
+  async reportBots(client, msg) {
+    await botControl.reportBots();
   }
 }
 
