@@ -43,7 +43,7 @@ class Handler {
     logger.warn(`crystelf WS 错误:${msg.data}`);
   }
 
-  /*
+  /**
   获取群聊信息，自动回调
   @examples 请求示例
   ```json
@@ -56,7 +56,7 @@ class Handler {
     },
   }
   ```
-   */
+   **/
   async handleGetGroupInfo(client, msg) {
     const requestId = msg?.requestId;
     const botId = msg.data?.botId;
@@ -71,6 +71,12 @@ class Handler {
     await wsClient.sendMessage(returnData);
   }
 
+  /**
+   * 发送信息到群聊
+   * @param client
+   * @param msg
+   * @returns {Promise<void>}
+   */
   async handleSendMessage(client, msg) {
     const botId = msg.data?.botId;
     const groupId = msg.data?.groupId;
