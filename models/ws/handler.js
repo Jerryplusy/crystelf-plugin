@@ -9,6 +9,7 @@ class Handler {
       ['message', this.handleMessageFromServer.bind(this)],
       ['error', this.handleError.bind(this)],
       ['getGroupInfo', this.handleGetGroupInfo.bind(this)],
+      ['sendMessage', this.handleSendMessage.bind(this)],
     ]);
   }
 
@@ -68,6 +69,13 @@ class Handler {
       data: groupData,
     };
     await wsClient.sendMessage(returnData);
+  }
+
+  async handleSendMessage(client, msg) {
+    const botId = msg.data?.botId;
+    const groupId = msg.data?.groupId;
+    const message = msg.data?.message;
+    await botControl.sendMessage(botId, message, groupId);
   }
 }
 
