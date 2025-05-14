@@ -10,6 +10,7 @@ class Handler {
       ['error', this.handleError.bind(this)],
       ['getGroupInfo', this.handleGetGroupInfo.bind(this)],
       ['sendMessage', this.handleSendMessage.bind(this)],
+      ['broadcastMessage', this.broadcastMessage.bind(this)],
     ]);
   }
 
@@ -82,6 +83,17 @@ class Handler {
     const groupId = msg.data?.groupId;
     const message = msg.data?.message;
     await botControl.sendMessage(botId, message, groupId);
+  }
+
+  /**
+   * 广播消息
+   * @param client
+   * @param msg
+   * @returns {Promise<void>}
+   */
+  async broadcastMessage(client, msg) {
+    const message = msg.data?.message;
+    await botControl.broadcastMessage(message);
   }
 }
 
