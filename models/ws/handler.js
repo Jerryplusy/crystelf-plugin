@@ -88,7 +88,7 @@ class Handler {
   }
 
   /**
-   * 广播消息
+   * 广播消息，感觉没啥用，用core的广播代替了
    * @param client
    * @param msg
    * @returns {Promise<void>}
