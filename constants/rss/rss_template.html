@@ -1,43 +1,37 @@
-<!-- TODO 美观html -->
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <style>
         body {
-            font-family: '微软雅黑', sans-serif;
-            background: #f9f9f9;
-            padding: 40px;
-            margin: 0;
-        }
-        .card {
-            max-width: 800px;
-            margin: auto;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-            padding: 30px;
-        }
-        h1 {
-            font-size: 22px;
+            font-family: "Helvetica Neue", sans-serif;
+            margin: 30px;
+            background: #f5f7fa;
             color: #333;
-            margin-bottom: 20px;
         }
-        p {
-            font-size: 16px;
-            color: #666;
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 760px;
+            margin: auto;
         }
-        a {
-            text-decoration: none;
-            color: #1e90ff;
-        }
+        h1 { margin: 0 0 10px; }
+        .meta { color: #666; font-size: 14px; margin-bottom: 15px; }
+        .content { font-size: 16px; line-height: 1.6; }
+        .footer { margin-top: 20px; font-size: 13px; color: #999; }
+        img { max-width: 100%; border-radius: 4px; }
     </style>
 </head>
 <body>
-<div class="card">
+<div class="container">
     <h1>{{title}}</h1>
-    <p>{{description}}</p>
-    <p><a href="{{link}}">{{link}}</a></p>
+    <div class="meta">作者：{{author}} | 时间：{{date}}</div>
+    <div class="content">{{content}}</div>
+    <div class="footer">
+        来自 <a href="{{link}}" target="_blank">{{feedTitle}}</a>
+    </div>
 </div>
 </body>
 </html>
