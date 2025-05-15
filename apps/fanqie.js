@@ -206,6 +206,7 @@ export class xzq extends plugin {
   }
 
   async upload(e, filePath) {
+    // TODO 修好这发文件的bug
     try {
       /*
       let res;
@@ -237,7 +238,7 @@ export class xzq extends plugin {
       });
       form.append('file', fileStream);
       form.append('token', configControl.get('coreConfig')?.token);
-      await finished(fileStream);
+      await finished(fileStream); //这文件读取也太慢了
       const uploadUrl = `${configControl.get('coreConfig')?.coreUrl}/public/upload?dir=fanqie&expire=600`;
       const response = await axios.post(uploadUrl, form, {
         headers: form.getHeaders(),

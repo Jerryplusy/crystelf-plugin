@@ -79,6 +79,7 @@ class Handler {
    * @param msg
    * @returns {Promise<void>}
    */
+  // TODO 测试可用性
   async handleSendMessage(client, msg) {
     const botId = msg.data?.botId;
     const groupId = msg.data?.groupId;
