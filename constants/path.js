@@ -19,6 +19,7 @@ const Path = {
   pkg: path.join(rootDir, 'package.json'),
   yunzai: path.join(rootDir, '../../'),
   data: path.join(rootDir, '../../data/crystelf/data'),
+  rssHTML: path.join(rootDir, 'constants/rss/rss_template.html'),
 };
 
 const configFile = fs.readFileSync(Path.defaultConfig, 'utf8');

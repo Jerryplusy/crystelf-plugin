@@ -1,0 +1,43 @@
+<!-- TODO 美观html -->
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        body {
+            font-family: '微软雅黑', sans-serif;
+            background: #f9f9f9;
+            padding: 40px;
+            margin: 0;
+        }
+        .card {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 16px;
+            color: #666;
+        }
+        a {
+            text-decoration: none;
+            color: #1e90ff;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>{{title}}</h1>
+    <p>{{description}}</p>
+    <p><a href="{{link}}">{{link}}</a></p>
+</div>
+</body>
+</html>
