@@ -204,7 +204,6 @@ export class xzq extends plugin {
   async upload(e, filePath) {
     // TODO 修好这发文件的bug
     try {
-      /*
       let res;
       if (e.isGroup) {
         res = e.bot.sendApi('upload_group_file', {
@@ -220,7 +219,8 @@ export class xzq extends plugin {
           name: path.basename(filePath),
         });
       }
-      return !!res;
+      return res;
+      /*
       //另外一种解决方法
       const form = new FormData();
       if (!fs.existsSync(filePath)) {
@@ -246,7 +246,7 @@ export class xzq extends plugin {
         const message = response.data?.message;
         return { url, message };
       }*/
-      return null;
+      //return null;
     } catch (err) {
       logger.error(`文件上传错误：${logger.red(err.stack)}`);
       e.reply(`文件上传失败：${err.message}`, true);
