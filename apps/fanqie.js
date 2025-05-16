@@ -2,11 +2,7 @@ import fs from 'node:fs';
 import path from 'path';
 import chokidar from 'chokidar';
 import ConfigControl from '../lib/config/configControl.js';
-import configControl from '../lib/config/configControl.js';
 import Fanqie from '../models/apps/fanqie/fanqie.js';
-import axios from 'axios';
-import FormData from 'form-data';
-import { finished } from 'stream/promises';
 
 let redis = global.redis;
 
@@ -225,7 +221,7 @@ export class xzq extends plugin {
         });
       }
       return !!res;
-       */
+      //另外一种解决方法
       const form = new FormData();
       if (!fs.existsSync(filePath)) {
         logger.error(`文件不存在：${filePath}`);
@@ -249,7 +245,8 @@ export class xzq extends plugin {
         const url = response.data?.url;
         const message = response.data?.message;
         return { url, message };
-      }
+      }*/
+      return null;
     } catch (err) {
       logger.error(`文件上传错误：${logger.red(err.stack)}`);
       e.reply(`文件上传失败：${err.message}`, true);
