@@ -4,7 +4,7 @@ import path from 'path';
 import screenshot from '../lib/rss/screenshot.js';
 import fs from 'fs';
 
-const rssCache = new Map();
+const rssCache = new Map(); // TODO 解决重启后的数据恢复问题
 
 export default class RssPlugin extends plugin {
   constructor() {
