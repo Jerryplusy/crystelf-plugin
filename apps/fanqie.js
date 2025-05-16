@@ -195,9 +195,7 @@ export class xzq extends plugin {
     await this.clearCache(false, true, String(e.message_id));
     if (!uploadReturn) return e.reply('上传失败', true);
 
-    e.reply(
-      `《${book_info.book_name}》上传成功，用时 ${(Date.now() - startTime) / 1000}s\n下载链接为${uploadReturn.url},将在10分钟后删除，请及时下载`
-    );
+    e.reply(`《${book_info.book_name}》上传成功，用时 ${(Date.now() - startTime) / 1000}s`);
     return true;
   }
 
@@ -206,14 +204,14 @@ export class xzq extends plugin {
     try {
       let res;
       if (e.isGroup) {
-        res = e.bot.sendApi('upload_group_file', {
+        res = await e.bot.sendApi('upload_group_file', {
           group_id: e.group_id,
           file: filePath,
           name: path.basename(filePath),
           folder: 'fanqie',
         });
       } else if (e.friend) {
-        res = e.bot.sendApi('upload_private_file', {
+        res = await e.bot.sendApi('upload_private_file', {
           user_id: e.user_id,
           file: filePath,
           name: path.basename(filePath),
