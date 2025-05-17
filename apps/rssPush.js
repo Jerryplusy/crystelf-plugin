@@ -21,6 +21,16 @@ export default class RssPlugin extends plugin {
           fnc: 'removeFeed',
           permission: 'master',
         },
+        {
+          reg: /(https?:\/\/[^\s]+(?:\.atom|\/feed))/i,
+          fnc: 'autoAddFeed',
+          permission: 'master',
+        },
+        {
+          reg: '^#rss拉取 (https?:\/\/[^\s]+)$',
+          fnc: 'pullFeedNow',
+          permission: 'master',
+        },
       ],
       task: [
         {
@@ -54,7 +64,20 @@ export default class RssPlugin extends plugin {
 
     feeds.push({ url, targetGroups: [groupId], screenshot: true });
     await configControl.set('feeds', feeds);
-    return e.reply(`rss解析流设置成功..`);
+    return e.reply(`rss解析流设置成功..`, true);
+  }
+
+  /**
+   * 自动添加
+   * @param e
+   * @returns {Promise<*|boolean>}
+   */
+  async autoAddFeed(e) {
+    const url = e.msg.match(/(https?:\/\/[^\s]+(?:\.atom|\/feed))/i)?.[1];
+    if (!url) return false;
+
+    e.msg = `#rss添加 ${url}`;
+    return await this.addFeed(e);
   }
 
   /**
@@ -67,11 +90,31 @@ export default class RssPlugin extends plugin {
     const feeds = configControl.get('feeds') || [];
     const groupId = e.group_id;
 
-    if (index < 0 || index >= feeds.length) return e.reply('索引无效');
+    if (index < 0 || index >= feeds.length) return e.reply('索引无效..', true);
 
     feeds[index].targetGroups = feeds[index].targetGroups.filter((id) => id !== groupId);
     await configControl.set('feeds', feeds);
     return e.reply('群已移除该订阅');
+  }
+
+  /**
+   * 手动拉取
+   * @param e
+   * @returns {Promise<*>}
+   */
+  async pullFeedNow(e) {
+    const url = e.msg.replace(/^#rss拉取\s*/, '').trim();
+    const latest = await rssTools.fetchFeed(url);
+
+    if (!latest || !latest.length) {
+      return e.reply('拉取失败或无内容..', true);
+    }
+
+    const post = latest[0];
+    const tempPath = path.join(process.cwd(), 'data', `rss-test-${Date.now()}.png`);
+    await screenshot.generateScreenshot(post, tempPath);
+    await e.reply([segment.image(tempPath)]);
+    fs.unlinkSync(tempPath);
   }
 
   /**
