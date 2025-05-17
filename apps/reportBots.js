@@ -1,5 +1,6 @@
 import botControl from '../lib/core/botControl.js';
 import configControl from '../lib/config/configControl.js';
+import schedule from 'node-schedule';
 
 export default class ReportBots extends plugin {
   constructor() {
@@ -18,17 +19,12 @@ export default class ReportBots extends plugin {
           permission: 'master',
         },
       ],
-      task: [
-        {
-          name: 'crystelf定时同步',
-          corn: '*/30 * * * *',
-          fnc: () => this.autoReport(),
-        },
-      ],
     });
+    schedule.scheduleJob('*/30 * * * *', () => this.autoReport());
   }
 
   async autoReport() {
+    logger.mark(`正在自动同步bot数据到晶灵核心..`);
     if (configControl.get('core')) {
       await botControl.reportBots();
     }

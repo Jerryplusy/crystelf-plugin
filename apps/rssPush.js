@@ -4,6 +4,7 @@ import path from 'path';
 import screenshot from '../lib/rss/screenshot.js';
 import fs from 'fs';
 import rssCache from '../lib/rss/rssCache.js';
+import schedule from 'node-schedule';
 
 export default class RssPlugin extends plugin {
   constructor() {
@@ -35,14 +36,8 @@ export default class RssPlugin extends plugin {
           priority: 500,
         },
       ],
-      task: [
-        {
-          name: 'RSS定时推送',
-          corn: '*/10 * * * *',
-          fnc: () => this.pushFeeds(),
-        },
-      ],
     });
+    schedule.scheduleJob('*/10 * * * *', () => this.pushFeeds());
   }
 
   /**
@@ -129,7 +124,7 @@ export default class RssPlugin extends plugin {
    */
   async pushFeeds(e) {
     const feeds = configControl.get('feeds') || [];
-
+    logger.mark(`正在检查rss流更新..`);
     for (const feed of feeds) {
       const latest = await rssTools.fetchFeed(feed.url);
       if (!latest || !latest.length) continue;
