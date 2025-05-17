@@ -128,18 +128,23 @@ export default class RssPlugin extends plugin {
   async pushFeeds(e) {
     const feeds = configControl.get('feeds') || [];
     logger.mark(`正在检查rss流更新..`);
+
     for (const feed of feeds) {
       const latest = await rssTools.fetchFeed(feed.url);
       if (!latest || !latest.length) continue;
+      const todayStr = new Date().toISOString().split('T')[0];
       const newItems = [];
       for (const item of latest) {
+        const pubDate = item.pubDate || item.published || item.date || item.updated;
+        if (!pubDate) continue;
+        const itemDate = new Date(pubDate).toISOString().split('T')[0];
+        if (itemDate !== todayStr) continue;
         if (!(await rssCache.has(feed.url, item.link))) {
           newItems.push(item);
         }
       }
       if (newItems.length) {
         await rssCache.set(feed.url, newItems[0].link);
-
         for (const groupId of feed.targetGroups) {
           const post = newItems[0];
           const tempPath = path.join(process.cwd(), 'data', `rss-${Date.now()}.png`);
