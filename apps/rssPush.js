@@ -10,6 +10,7 @@ export default class RssPlugin extends plugin {
     super({
       name: 'crystelf RSS订阅',
       dsc: '定时推送rss解析流',
+      priority: 114,
       rule: [
         {
           reg: '^#rss添加(.+)$',
@@ -22,13 +23,13 @@ export default class RssPlugin extends plugin {
           permission: 'master',
         },
         {
-          reg: /(https?:\/\/[^\s]+(?:\.atom|\/feed))/i,
-          fnc: 'autoAddFeed',
+          reg: '^#rss拉取 (https?:\/\/[^\s]+)$',
+          fnc: 'pullFeedNow',
           permission: 'master',
         },
         {
-          reg: '^#rss拉取 (https?:\/\/[^\s]+)$',
-          fnc: 'pullFeedNow',
+          reg: /(https?:\/\/[^\s]+(?:\.atom|\/feed))/i,
+          fnc: 'autoAddFeed',
           permission: 'master',
         },
       ],
