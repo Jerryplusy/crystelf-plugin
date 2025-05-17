@@ -1,5 +1,6 @@
 import systemControl from '../lib/core/systemControl.js';
 import tools from '../components/tool.js';
+import configControl from '../lib/config/configControl.js';
 
 export default class CoreRestart extends plugin {
   constructor() {
@@ -17,18 +18,21 @@ export default class CoreRestart extends plugin {
   }
 
   async restart(e) {
+    if (!configControl.get('core')) {
+      return e.reply(`晶灵核心未启用..`, true);
+    }
     const returnData = await systemControl.systemRestart();
     if (returnData?.data?.success) {
-      e.reply(`操作成功:${returnData?.data?.data}..`);
+      e.reply(`操作成功:${returnData?.data?.data}..`, true);
     } else {
-      e.reply(`操作失败:${returnData?.data?.data}..`);
+      e.reply(`操作失败:${returnData?.data?.data}..`, true);
     }
     await tools.sleep(8000);
     const restartTime = await systemControl.getRestartTime();
     if (restartTime) {
-      e.reply(`晶灵核心重启成功！耗时${restartTime?.data?.data}秒..`);
+      e.reply(`晶灵核心重启成功！耗时${restartTime?.data?.data}秒..`, true);
     } else {
-      e.reply(`核心重启花的时间有点久了呢..${restartTime?.data?.data}`);
+      e.reply(`核心重启花的时间有点久了呢..${restartTime?.data?.data}`, true);
     }
   }
 }

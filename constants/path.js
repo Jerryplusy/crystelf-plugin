@@ -20,6 +20,7 @@ const Path = {
   yunzai: path.join(rootDir, '../../'),
   data: path.join(rootDir, '../../data/crystelf/data'),
   rssHTML: path.join(rootDir, 'constants/rss/rss_template.html'),
+  rssCache: path.join(rootDir, '../../data/crystelf'),
 };
 
 const configFile = fs.readFileSync(Path.defaultConfig, 'utf8');

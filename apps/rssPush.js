@@ -3,8 +3,7 @@ import rssTools from '../models/rss/rss.js';
 import path from 'path';
 import screenshot from '../lib/rss/screenshot.js';
 import fs from 'fs';
-
-const rssCache = new Map(); // TODO 解决重启后的数据恢复问题
+import rssCache from '../lib/rss/rssCache.js';
 
 export default class RssPlugin extends plugin {
   constructor() {
@@ -52,7 +51,8 @@ export default class RssPlugin extends plugin {
       }
       return e.reply(`该rss已存在并包含在该群聊..`, true);
     }
-    feeds.push({ url, targetGroup: [groupId], screenshot: true });
+
+    feeds.push({ url, targetGroups: [groupId], screenshot: true });
     await configControl.set('feeds', feeds);
     return e.reply(`rss解析流设置成功..`);
   }
@@ -81,22 +81,27 @@ export default class RssPlugin extends plugin {
    */
   async pushFeeds(e) {
     const feeds = configControl.get('feeds') || [];
+
     for (const feed of feeds) {
       const latest = await rssTools.fetchFeed(feed.url);
-      if (!latest || latest.length) continue;
-      const cacheKey = feed.url;
-      const lastId = rssCache.get(cacheKey);
-      const newItems = lastId ? latest.filter((i) => i.link !== lastId) : latest;
-      if (newItems.length) rssCache.set(cacheKey, newItems[0].link);
-      for (const groupId of feed.targetGroups) {
-        const post = newItems[0];
-        const tempPath = path.join(process.cwd(), 'data', `rss-${Date.now()}.png`);
-        if (feed.screenshot) {
-          await screenshot.generateScreenshot(post, tempPath);
-          Bot.pickGroup(groupId)?.sendMsg([segment.image(tempPath)]);
-          fs.unlinkSync(tempPath);
-        } else {
-          Bot.pickGroup(groupId)?.sendMsg(`[RSS推送]\n${post.title}\n${post.link}`);
+      if (!latest || !latest.length) continue;
+
+      const lastLink = await rssCache.get(feed.url);
+      const newItems = lastLink ? latest.filter((i) => i.link !== lastLink) : latest;
+
+      if (newItems.length) {
+        await rssCache.set(feed.url, newItems[0].link);
+
+        for (const groupId of feed.targetGroups) {
+          const post = newItems[0];
+          const tempPath = path.join(process.cwd(), 'data', `rss-${Date.now()}.png`);
+          if (feed.screenshot) {
+            await screenshot.generateScreenshot(post, tempPath);
+            await Bot.pickGroup(groupId)?.sendMsg([segment.image(tempPath)]);
+            fs.unlinkSync(tempPath);
+          } else {
+            await Bot.pickGroup(groupId)?.sendMsg(`[RSS推送]\n${post.title}\n${post.link}`);
+          }
         }
       }
     }

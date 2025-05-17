@@ -1,4 +1,5 @@
 import botControl from '../lib/core/botControl.js';
+import configControl from '../lib/config/configControl.js';
 
 export default class ReportBots extends plugin {
   constructor() {
@@ -28,15 +29,20 @@ export default class ReportBots extends plugin {
   }
 
   async autoReport() {
-    await botControl.reportBots();
+    if (configControl.get('core')) {
+      await botControl.reportBots();
+    }
   }
 
   async manualReport(e) {
+    if (!configControl.get('core')) {
+      return e.reply(`晶灵核心未启用..`, true);
+    }
     let success = await botControl.reportBots();
     if (success) {
-      e.reply('crystelf Bot信息已同步到核心..');
+      e.reply('crystelf Bot信息已同步到核心..', true);
     } else {
-      e.reply('crystelf Bot同步失败：核心未连接..');
+      e.reply('crystelf Bot同步失败：核心未连接..', true);
     }
   }
 
