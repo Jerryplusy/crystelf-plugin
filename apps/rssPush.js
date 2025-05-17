@@ -23,14 +23,16 @@ export default class RssPlugin extends plugin {
           permission: 'master',
         },
         {
-          reg: '^#rss拉取 (https?:\/\/[^\s]+)$',
+          reg: '^#rss拉取(.+)$',
           fnc: 'pullFeedNow',
           permission: 'master',
+          priority: 100,
         },
         {
           reg: /(https?:\/\/[^\s]+(?:\.atom|\/feed))/i,
           fnc: 'autoAddFeed',
           permission: 'master',
+          priority: 500,
         },
       ],
       task: [
@@ -74,7 +76,7 @@ export default class RssPlugin extends plugin {
    * @returns {Promise<*|boolean>}
    */
   async autoAddFeed(e) {
-    if (/^#rss/i.test(e.msg.trim())) return false;
+    //if (/^#rss/i.test(e.msg.trim())) return false;
     const url = e.msg.match(/(https?:\/\/[^\s]+(?:\.atom|\/feed))/i)?.[1];
     if (!url) return false;
     e.msg = `#rss添加 ${url}`;
@@ -104,14 +106,16 @@ export default class RssPlugin extends plugin {
    * @returns {Promise<*>}
    */
   async pullFeedNow(e) {
-    const url = e.msg.replace(/^#rss拉取\s*/, '').trim();
+    const url = e.msg.replace(/^#rss拉取/, '').trim();
     const latest = await rssTools.fetchFeed(url);
+    //logger.info(latest);
 
     if (!latest || !latest.length) {
       return e.reply('拉取失败或无内容..', true);
     }
 
     const post = latest[0];
+    //console.log(post);
     const tempPath = path.join(process.cwd(), 'data', `rss-test-${Date.now()}.png`);
     await screenshot.generateScreenshot(post, tempPath);
     await e.reply([segment.image(tempPath)]);
