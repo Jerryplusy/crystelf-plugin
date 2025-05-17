@@ -37,7 +37,10 @@ export default class RssPlugin extends plugin {
         },
       ],
     });
-    schedule.scheduleJob('*/10 * * * *', () => this.pushFeeds());
+    if (!global.__rss_job_scheduled) {
+      schedule.scheduleJob('*/10 * * * *', () => this.pushFeeds());
+      global.__rss_job_scheduled = true;
+    }
   }
 
   /**
@@ -128,10 +131,12 @@ export default class RssPlugin extends plugin {
     for (const feed of feeds) {
       const latest = await rssTools.fetchFeed(feed.url);
       if (!latest || !latest.length) continue;
-
-      const lastLink = await rssCache.get(feed.url);
-      const newItems = lastLink ? latest.filter((i) => i.link !== lastLink) : latest;
-
+      const newItems = [];
+      for (const item of latest) {
+        if (!(await rssCache.has(feed.url, item.link))) {
+          newItems.push(item);
+        }
+      }
       if (newItems.length) {
         await rssCache.set(feed.url, newItems[0].link);
 
