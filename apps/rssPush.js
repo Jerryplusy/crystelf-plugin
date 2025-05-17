@@ -74,9 +74,9 @@ export default class RssPlugin extends plugin {
    * @returns {Promise<*|boolean>}
    */
   async autoAddFeed(e) {
+    if (/^#rss/i.test(e.msg.trim())) return false;
     const url = e.msg.match(/(https?:\/\/[^\s]+(?:\.atom|\/feed))/i)?.[1];
     if (!url) return false;
-
     e.msg = `#rss添加 ${url}`;
     return await this.addFeed(e);
   }
