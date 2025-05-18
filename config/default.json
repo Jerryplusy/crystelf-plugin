@@ -9,6 +9,7 @@
     "wsReConnectInterval": "5000",
     "token": ""
   },
+  "maxFeed": 10,
   "feeds": [
     {
       "url": "",

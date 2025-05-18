@@ -27,7 +27,7 @@ const rssTools = {
         date: item.pubDate || item.isoDate,
         feedTitle: feed.title,
         feedLink: feed.link,
-        image: feed.image?.url || '',
+        image: feed.image?.url || feed.logo || '',
       }));
     } catch (err) {
       logger.error(`RSS 拉取失败: ${url}`, err);
