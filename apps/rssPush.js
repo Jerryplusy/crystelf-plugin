@@ -5,6 +5,7 @@ import screenshot from '../lib/rss/screenshot.js';
 import fs from 'fs';
 import rssCache from '../lib/rss/rssCache.js';
 import schedule from 'node-schedule';
+import tools from '../components/tool.js';
 
 export default class RssPlugin extends plugin {
   constructor() {
@@ -149,6 +150,15 @@ export default class RssPlugin extends plugin {
           const post = newItems[0];
           const tempPath = path.join(process.cwd(), 'data', `rss-${Date.now()}.png`);
           if (feed.screenshot) {
+            await Bot.pickGroup(groupId)?.sendMsg(
+              `${configControl.get('nickName')}发现了一条新的rss推送!`
+            );
+            await tools.sleep(1000);
+            //await Bot.pickGroup(groupId)?.sendMsg(`让${configControl.get('nickName')}看看内容是什么..`);
+            // TODO 通过人工智能查看内容
+            await Bot.pickGroup(groupId)?.sendMsg(
+              `[标题] ${post.title}\n[作者] ${post.author}\n[来源} ${post.feedTitle}\n正在努力截图..`
+            );
             await screenshot.generateScreenshot(post, tempPath);
             await Bot.pickGroup(groupId)?.sendMsg([segment.image(tempPath)]);
             fs.unlinkSync(tempPath);

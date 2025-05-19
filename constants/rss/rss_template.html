@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>{{title}}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
     <style>
         html, body {
             margin: 0;
             padding: 0;
             font-family: "Helvetica Neue", sans-serif;
-            color: #fff;
             overflow-x: hidden;
         }
 
@@ -35,8 +37,23 @@
             backdrop-filter: blur(18px);
             -webkit-backdrop-filter: blur(18px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            border: 1.5px solid rgba(76, 175, 80, 0.7); /* 绿色边框 */
+            border: 1.5px solid rgba(76, 175, 80, 0.7);
         }
+
+        .container pre code {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            border-radius: 8px;
+            padding: 16px;
+            display: block;
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.11);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f8f8f2;
+        }
+
 
         h1 {
             margin-top: 0;
