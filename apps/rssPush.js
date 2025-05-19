@@ -31,7 +31,7 @@ export default class RssPlugin extends plugin {
           priority: 100,
         },
         {
-          reg: /(https?:\/\/[^\s]+(?:\.atom|\/feed))/i,
+          reg: /(https?:\/\/\S+(?:\.atom|\/feed))/i,
           fnc: 'autoAddFeed',
           permission: 'master',
           priority: 500,
@@ -76,7 +76,7 @@ export default class RssPlugin extends plugin {
    */
   async autoAddFeed(e) {
     //if (/^#rss/i.test(e.msg.trim())) return false;
-    const url = e.msg.match(/(https?:\/\/[^\s]+(?:\.atom|\/feed))/i)?.[1];
+    const url = e.msg.match(/(https?:\/\/\S+(?:\.atom|\/feed))/i)?.[1];
     if (!url) return false;
     e.msg = `#rss添加 ${url}`;
     return await this.addFeed(e);
@@ -123,10 +123,9 @@ export default class RssPlugin extends plugin {
 
   /**
    * 检查rss更新
-   * @param e
    * @returns {Promise<void>}
    */
-  async pushFeeds(e) {
+  async pushFeeds() {
     const feeds = configControl.get('feeds') || [];
     logger.mark(`正在检查rss流更新..`);
 
@@ -136,7 +135,7 @@ export default class RssPlugin extends plugin {
       const todayStr = new Date().toISOString().split('T')[0];
       const newItems = [];
       for (const item of latest) {
-        const pubDate = item.pubDate || item.published || item.date || item.updated;
+        const pubDate = item.date;
         if (!pubDate) continue;
         const itemDate = new Date(pubDate).toISOString().split('T')[0];
         if (itemDate !== todayStr) continue;
