@@ -12,13 +12,16 @@
             padding: 0;
             font-family: "Helvetica Neue", sans-serif;
             overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
         }
 
         .background {
-            position: fixed;
             top: 0;
             left: 0;
+            min-height: 100vh;
             height: 100%;
+            position: absolute;
             width: 100%;
             background-image: url('https://www.dmoe.cc/random.php');
             background-size: cover;
@@ -37,7 +40,7 @@
             backdrop-filter: blur(18px);
             -webkit-backdrop-filter: blur(18px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            border: 1.5px solid rgba(76, 175, 80, 0.7);
+            border: 2px solid rgba(76, 175, 80, 0.7);
         }
 
         .container pre code {
@@ -47,11 +50,11 @@
             padding: 16px;
             display: block;
             overflow-x: auto;
-            background: rgba(0, 0, 0, 0.11);
+            background: rgba(0, 0, 0, 0.58);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #f8f8f2;
+            color: #ffffff;
         }
 
 
