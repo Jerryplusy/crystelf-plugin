@@ -17,6 +17,13 @@
       "screenshot": true
     }
   ],
+  "poke": {
+    "replyText": 0.4,
+    "replyVoice": 0.2,
+    "mutePick": 0.1,
+    "pai": 0.1,
+    "muteTime": 2
+  },
   "fanqieConfig": {
     "url": "http://127.0.0.1:6868",
     "outDir": "/home/user/debian/cache/Downloads"

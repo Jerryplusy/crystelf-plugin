@@ -3,10 +3,11 @@ import tool from '../components/tool.js';
 import axios from 'axios';
 import configControl from '../lib/config/configControl.js';
 
-const replyText = 0.4;
-const replyVoice = 0.2;
-const mutePick = 0.1;
-const pai = 0.1;
+const replyText = configControl.get('poke')?.replyText;
+const replyVoice = configControl.get('poke')?.replyVoice;
+const mutePick = configControl.get('poke')?.mutePick;
+const pai = configControl.get(`poke`)?.pai;
+const muteTime = configControl.get('poke')?.muteTime;
 
 export default class pockpock extends plugin {
   constructor() {
@@ -31,7 +32,7 @@ async function pokeMaster(e) {
   if (cfg.masterQQ.includes(e.operator_id) || e.self_id === e.operator_id) {
     return;
   }
-  e.reply(`你几把谁啊，敢戳我亲爱的主人，胆子好大啊你🤚😡🤚`);
+  e.reply(`你几把谁啊，敢戳我主人，胆子好大啊你🤚😡🤚`);
   await tool.sleep(1000);
   e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
   return true;
@@ -52,7 +53,54 @@ async function chuochuo(e) {
     if (returnData?.success) {
       return await e.reply(returnData.data);
     } else {
-      return await e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道要说啥好了..`);
+      return await e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道该说啥好了..`);
+    }
+  } else if (randomNum < replyText + replyVoice) {
+    const returnData = await axios.get(
+      `${configControl.get(`coreConfig`)?.coreUrl}/api/words/getText/poke`
+    );
+    if (returnData?.success) {
+      let message = returnData?.data;
+      message = cleanText(message);
+      return;
+      //await this.e.bot.sendApi('') // TODO 🐎呀忘了api是啥了
+    } else {
+      return await e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道该说啥好了..`);
+    }
+  } else if (randomNum < replyText + replyVoice + mutePick) {
+    // TODO 判断是否管理
+    let mutetype = Math.ceil(Math.random() * 4);
+    if (mutetype === 1) {
+      e.reply('我生气了！砸挖撸多!木大！木大木大！');
+      await tool.sleep(1000);
+      await e.group.muteMember(e.operator_id, 60 * muteTime);
+    }
+    if (mutetype === 2) {
+      e.reply('不！！');
+      await tool.sleep(1000);
+      e.reply('准！！');
+      await tool.sleep(1000);
+      e.reply('戳！！');
+      await tool.sleep(1000);
+      await e.group.muteMember(e.operator_id, 60 * muteTime);
+      await tool.sleep(1000);
+      e.reply('！！');
+      return;
+    }
+    if (mutetype === 3) {
+      e.reply('吃我10068拳！');
+      await tool.sleep(1000);
+      e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
+      await e.group.muteMember(e.operator_id, 60 * muteTime);
+      await tool.sleep(1000);
+      return;
+    }
+    if (mutetype === 4) {
+      e.reply('哼，我可是会还手的哦——');
+      await tool.sleep(1000);
+      e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
+      await e.group.muteMember(e.operator_id, 60 * muteTime);
+      return;
     }
   }
 }
