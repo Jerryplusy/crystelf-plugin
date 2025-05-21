@@ -6,7 +6,7 @@ import Fanqie from '../models/apps/fanqie/fanqie.js';
 
 let redis = global.redis;
 
-export class xzq extends plugin {
+export default class xzq extends plugin {
   constructor() {
     super({
       name: 'fanqie',
@@ -163,7 +163,7 @@ export class xzq extends plugin {
     if (!e.isMaster) {
       const allowGroup = e.isGroup ? await redis.get(`fqxzq:g:${e.group_id}`) : null;
       const allowUser = await redis.get(`fqxzq:u:${e.user_id}`);
-      return e.reply(`暂未开放下载功能，请等待功能更新..`);
+      return e.reply(`暂未开放下载功能，请等待功能更新..`, true);
       //if (!allowGroup && !allowUser) return false;
     }
 
