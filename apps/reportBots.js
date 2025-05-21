@@ -1,6 +1,7 @@
 import botControl from '../lib/core/botControl.js';
 import configControl from '../lib/config/configControl.js';
 import schedule from 'node-schedule';
+import axios from 'axios';
 
 export default class ReportBots extends plugin {
   constructor() {
@@ -12,12 +13,12 @@ export default class ReportBots extends plugin {
           reg: '^#crystelf同步$',
           fnc: 'manualReport',
           permission: 'master',
-        } /*,
+        },
         {
           reg: '^#crystelf广播(.+)$',
           fnc: 'broadcast',
           permission: 'master',
-        },*/,
+        },
       ],
     });
     schedule.scheduleJob('*/30 * * * *', () => this.autoReport());
@@ -39,6 +40,30 @@ export default class ReportBots extends plugin {
       e.reply('crystelf Bot信息已同步到核心..', true);
     } else {
       e.reply('crystelf Bot同步失败：核心未连接..', true);
+    }
+  }
+
+  async broadcast(e) {
+    const msg = e?.msg?.match(/^#crystelf广播(.+)$/)?.[1]?.trim();
+    if (!msg) {
+      return e.reply('广播内容不能为空');
+    }
+    e.reply(`开始广播消息到所有群..`);
+    try {
+      const sendData = {
+        token: configControl.get('coreConfig')?.token,
+        message: msg.toString(),
+      };
+      const url = configControl.get('coreConfig')?.coreUrl;
+      const returnData = await axios.post(url, sendData);
+      if (returnData?.success) {
+        return e.reply(`操作成功:${returnData?.data.toString()}`);
+      } else {
+        return e.reply(`广播出现错误，请检查日志..`);
+      }
+    } catch (err) {
+      logger.error(`广播执行异常: ${err.message}`);
+      return e.reply('广播过程中发生错误，请检查日志..');
     }
   }
 }
