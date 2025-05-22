@@ -32,7 +32,6 @@
     "replyText": 0.4,
     "replyVoice": 0.2,
     "mutePick": 0.1,
-    "pai": 0.1,
     ""muteTime": 2"
   },
   "mode": "deepseek",//deepseekORopenai
