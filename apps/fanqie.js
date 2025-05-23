@@ -4,6 +4,9 @@ import chokidar from 'chokidar';
 import ConfigControl from '../lib/config/configControl.js';
 import Fanqie from '../models/apps/fanqie/fanqie.js';
 
+/**
+ * 本功能由y68(github@yeqiu6080)提供支持
+ */
 let redis = global.redis;
 
 export default class xzq extends plugin {
