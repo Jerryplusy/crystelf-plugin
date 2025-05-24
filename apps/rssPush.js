@@ -96,7 +96,7 @@ export default class RssPlugin extends plugin {
 
     feeds[index].targetGroups = feeds[index].targetGroups.filter((id) => id !== groupId);
     await configControl.set('feeds', feeds);
-    return e.reply('群已移除该订阅');
+    return await e.reply('群已移除该订阅');
   }
 
   /**
@@ -110,7 +110,7 @@ export default class RssPlugin extends plugin {
     //logger.info(latest);
 
     if (!latest || !latest.length) {
-      return e.reply('拉取失败或无内容..', true);
+      return await e.reply('拉取失败或无内容..', true);
     }
 
     const post = latest[0];

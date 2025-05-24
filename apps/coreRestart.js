@@ -23,16 +23,16 @@ export default class CoreRestart extends plugin {
     }
     const returnData = await systemControl.systemRestart();
     if (returnData?.data?.success) {
-      e.reply(`操作成功:${returnData?.data?.data}..`, true);
+      await e.reply(`操作成功:${returnData?.data?.data}..`, true);
     } else {
-      e.reply(`操作失败:${returnData?.data?.data}..`, true);
+      await e.reply(`操作失败:${returnData?.data?.data}..`, true);
     }
     await tools.sleep(8000);
     const restartTime = await systemControl.getRestartTime();
     if (restartTime) {
-      e.reply(`晶灵核心重启成功！耗时${restartTime?.data?.data}秒..`, true);
+      await e.reply(`晶灵核心重启成功！耗时${restartTime?.data?.data}秒..`, true);
     } else {
-      e.reply(`核心重启花的时间有点久了呢..${restartTime?.data?.data}`, true);
+      await e.reply(`核心重启花的时间有点久了呢..${restartTime?.data?.data}`, true);
     }
   }
 }

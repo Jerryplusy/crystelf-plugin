@@ -87,7 +87,7 @@ async function handleBotPoke(e) {
       if (res.data?.success) {
         const message = res.data.data.toString();
         //let message = cleanText(res.data.data.toString());
-        logger.info(message);
+        //logger.info(message);
         return await e.bot.sendApi('get_ai_record', {
           group_id: e.group_id,
           character: 'lucy-voice-hoige',
@@ -103,7 +103,7 @@ async function handleBotPoke(e) {
   if (randomNum < replyText + replyVoice + mutePick) {
     let mutetype = Math.ceil(Math.random() * 4);
 
-    const botInfo = await e.bot.getGroupMemberInfo(e.group_id, e.bot.uin);
+    const botInfo = await Bot.pickMember(e.group_id, e.bot.uin).getInfo();
     const isAdmin = botInfo.role === 'admin' || botInfo.role === 'owner';
     if (!isAdmin) mutetype = 5;
 

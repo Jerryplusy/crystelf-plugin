@@ -37,9 +37,9 @@ export default class ReportBots extends plugin {
     }
     let success = await botControl.reportBots();
     if (success) {
-      e.reply('crystelf Bot信息已同步到核心..', true);
+      await e.reply('crystelf Bot信息已同步到核心..', true);
     } else {
-      e.reply('crystelf Bot同步失败：核心未连接..', true);
+      await e.reply('crystelf Bot同步失败：核心未连接..', true);
     }
   }
 
@@ -48,7 +48,7 @@ export default class ReportBots extends plugin {
     if (!msg) {
       return e.reply('广播内容不能为空');
     }
-    e.reply(`开始广播消息到所有群..`);
+    await e.reply(`开始广播消息到所有群..`);
     try {
       const sendData = {
         token: configControl.get('coreConfig')?.token,
@@ -57,13 +57,13 @@ export default class ReportBots extends plugin {
       const url = configControl.get('coreConfig')?.coreUrl;
       const returnData = await axios.post(url, sendData);
       if (returnData?.success) {
-        return e.reply(`操作成功:${returnData?.data.toString()}`);
+        return await e.reply(`操作成功:${returnData?.data.toString()}`);
       } else {
-        return e.reply(`广播出现错误，请检查日志..`);
+        return await e.reply(`广播出现错误，请检查日志..`);
       }
     } catch (err) {
       logger.error(`广播执行异常: ${err.message}`);
-      return e.reply('广播过程中发生错误，请检查日志..');
+      return await e.reply('广播过程中发生错误，请检查日志..');
     }
   }
 }
