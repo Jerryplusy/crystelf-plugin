@@ -79,8 +79,8 @@ async function chuochuo(e) {
     const returnData = await axios.get(
       `${configControl.get(`coreConfig`)?.coreUrl}/api/words/getText/poke`
     );
-    if (returnData?.success) {
-      let message = returnData?.data;
+    if (returnData?.data?.success) {
+      let message = returnData.data.data.toString();
       message = cleanText(message);
       return await e.bot.sendApi('get_ai_record', {
         group_id: e.group_id,
