@@ -207,13 +207,12 @@ export default class xzq extends plugin {
     // TODO 修好这发文件的bug
     try {
       let res;
-      logger.info(filePath);
+      //logger.info(filePath);
       if (e.isGroup) {
         res = await e.bot.sendApi('upload_group_file', {
           group_id: e.group_id,
           file: filePath,
           name: path.basename(filePath),
-          folder: 'fanqie',
         });
       } else if (e.friend) {
         res = await e.bot.sendApi('upload_private_file', {
@@ -222,6 +221,7 @@ export default class xzq extends plugin {
           name: path.basename(filePath),
         });
       }
+      logger.info(res);
       return res;
       /*
       //另外一种解决方法
