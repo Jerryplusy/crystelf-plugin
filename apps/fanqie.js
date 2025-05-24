@@ -166,8 +166,8 @@ export default class xzq extends plugin {
     if (!e.isMaster) {
       const allowGroup = e.isGroup ? await redis.get(`fqxzq:g:${e.group_id}`) : null;
       const allowUser = await redis.get(`fqxzq:u:${e.user_id}`);
-      return e.reply(`暂未开放下载功能，请等待功能更新..`, true);
-      //if (!allowGroup && !allowUser) return false;
+      //return e.reply(`暂未开放下载功能，请等待功能更新..`, true);
+      if (!allowGroup && !allowUser) return false;
     }
 
     e.reply('开始下载，请稍等', true);
