@@ -61,14 +61,20 @@ async function chuochuo(e) {
   logger.info(e.operator_id);
   const randomNum = Math.random();
   if (randomNum < replyText) {
-    const returnData = await axios.get(
-      `${configControl.get(`coreConfig`)?.coreUrl}/api/words/getText/poke`
-    );
-    if (returnData?.success) {
+    await axios
+      .get(`${configControl.get(`coreConfig`)?.coreUrl}/api/words/getText/poke`)
+      .then((res) => {
+        if (res.data?.success) {
+          return res.data.data;
+        } else {
+          return e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道该说啥好了..`);
+        }
+      });
+    /*if (returnData?.success) {
       return e.reply(returnData.data);
     } else {
       return e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道该说啥好了..`);
-    }
+    }*/
   } else if (randomNum < replyText + replyVoice) {
     const returnData = await axios.get(
       `${configControl.get(`coreConfig`)?.coreUrl}/api/words/getText/poke`
