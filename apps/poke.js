@@ -86,7 +86,7 @@ async function chuochuo(e) {
     }
   } else if (randomNum < replyText + replyVoice + mutePick) {
     let mutetype = Math.ceil(Math.random() * 4);
-    if (!Bot.pickMember(e.group_id, e.uin).getInfo()?.role === ('admin' || 'owner')) {
+    if (!Bot.pickMember(e.group_id, e.bot.uin).getInfo()?.role === ('admin' || 'owner')) {
       mutetype = 5;
     }
     if (mutetype === 1) {
