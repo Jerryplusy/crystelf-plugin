@@ -64,6 +64,7 @@ async function chuochuo(e) {
     await axios
       .get(`${configControl.get(`coreConfig`)?.coreUrl}/api/words/getText/poke`)
       .then((res) => {
+        logger.info(JSON.stringify(res));
         if (res.data?.success) {
           return res.data.data;
         } else {
@@ -82,6 +83,7 @@ async function chuochuo(e) {
     if (returnData?.data?.success) {
       let message = returnData.data.data.toString();
       message = cleanText(message);
+      logger.info(message);
       return await e.bot.sendApi('get_ai_record', {
         group_id: e.group_id,
         character: 'lucy-voice-hoige',
