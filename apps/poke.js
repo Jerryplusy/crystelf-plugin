@@ -41,13 +41,18 @@ async function pokeMaster(e) {
   }
   e.reply(`你几把谁啊，敢戳我主人，胆子好大啊你🤚😡🤚`);
   await tool.sleep(1000);
-  e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
+  this.e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
   return true;
 }
 
 async function masterPoke(e) {
   logger.info(`跟主人一起戳！`);
-  e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.target_id });
+  if (e.target_id !== this.e.uin) {
+    this.e.bot.sendApi('group_poke', {
+      group_id: e.group_id,
+      user_id: e.target_id,
+    });
+  }
   return true;
 }
 
@@ -103,7 +108,7 @@ async function chuochuo(e) {
     if (mutetype === 3) {
       e.reply('吃我10068拳！');
       await tool.sleep(1000);
-      e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
+      this.e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
       await e.group.muteMember(e.operator_id, 60 * muteTime);
       await tool.sleep(1000);
       return true;
@@ -111,31 +116,31 @@ async function chuochuo(e) {
     if (mutetype === 4) {
       e.reply('哼，我可是会还手的哦——');
       await tool.sleep(1000);
-      e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
+      this.e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
       await e.group.muteMember(e.operator_id, 60 * muteTime);
       return true;
     }
     if (mutetype === 5) {
       e.reply('哼，要不是我不是管理，早🈲盐你了！');
       await tool.sleep(1000);
-      e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
+      this.e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
     }
   } else {
     const returnType = Math.round(Math.random() * 3);
     if (returnType === 1) {
       e.reply('吃我一拳喵！');
       await tool.sleep(1000);
-      e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
+      this.e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
       return true;
     } else if (returnType === 2) {
       e.reply('你刚刚是不是戳我了，你是坏蛋！我要戳回去，哼！！！');
       await tool.sleep(1000);
-      await e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
+      await this.e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
       return true;
     } else if (returnType === 3) {
       e.reply('是不是要本萝莉揍你一顿才开心啊！！！');
       await tool.sleep(1000);
-      await e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
+      await this.e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
       return true;
     }
   }
