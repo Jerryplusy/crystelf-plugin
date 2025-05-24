@@ -5,7 +5,7 @@ import ConfigControl from '../lib/config/configControl.js';
 import Fanqie from '../models/apps/fanqie/fanqie.js';
 
 /**
- * 本功能由y68(github@yeqiu6080)提供支持
+ * 本功能由y68(github@yeqiu6080)提供技术支持
  */
 let redis = global.redis;
 
@@ -204,10 +204,8 @@ export default class xzq extends plugin {
   }
 
   async upload(e, filePath) {
-    // TODO 修好这发文件的bug
     try {
       let res;
-      //logger.info(filePath);
       if (e.isGroup) {
         res = await e.bot.sendApi('upload_group_file', {
           group_id: e.group_id,
@@ -221,35 +219,7 @@ export default class xzq extends plugin {
           name: path.basename(filePath),
         });
       }
-      logger.info(res);
       return res;
-      /*
-      //另外一种解决方法
-      const form = new FormData();
-      if (!fs.existsSync(filePath)) {
-        logger.error(`文件不存在：${filePath}`);
-        e.reply(`文件上传失败`, true);
-        return;
-      }
-      const fileStream = fs.createReadStream(filePath);
-      fileStream.on('error', (err) => {
-        logger.error('文件读取错误：', err);
-      });
-      form.append('file', fileStream);
-      form.append('token', configControl.get('coreConfig')?.token);
-      await finished(fileStream); //这文件读取也太慢了
-      const uploadUrl = `${configControl.get('coreConfig')?.coreUrl}/public/upload?dir=fanqie&expire=600`;
-      const response = await axios.post(uploadUrl, form, {
-        headers: form.getHeaders(),
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
-      });
-      if (response?.success) {
-        const url = response.data?.url;
-        const message = response.data?.message;
-        return { url, message };
-      }*/
-      //return null;
     } catch (err) {
       logger.error(`文件上传错误：${logger.red(err.stack)}`);
       e.reply(`文件上传失败：${err.message}`, true);
