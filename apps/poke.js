@@ -41,13 +41,13 @@ async function pokeMaster(e) {
   }
   e.reply(`你几把谁啊，敢戳我主人，胆子好大啊你🤚😡🤚`);
   await tool.sleep(1000);
-  e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
+  e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
   return true;
 }
 
 async function masterPoke(e) {
   logger.info(`跟主人一起戳！`);
-  e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.target_id });
+  e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.target_id });
   return true;
 }
 
@@ -69,14 +69,19 @@ async function chuochuo(e) {
     if (returnData?.success) {
       let message = returnData?.data;
       message = cleanText(message);
-      return;
-      //await this.e.bot.sendApi('') // TODO 🐎呀忘了api是啥了
+      return await this.e.bot.sendApi('get_ai_record', {
+        group_id: e.group_id,
+        character: 'lucy-voice-hoige',
+        text: message,
+      });
     } else {
       return await e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道该说啥好了..`);
     }
   } else if (randomNum < replyText + replyVoice + mutePick) {
-    // TODO 判断是否管理
     let mutetype = Math.ceil(Math.random() * 4);
+    if (!Bot.pickMember(e.group_id, this.e.uin).getInfo()?.role === ('admin' || 'owner')) {
+      mutetype = 5;
+    }
     if (mutetype === 1) {
       e.reply('我生气了！砸挖撸多!木大！木大木大！');
       await tool.sleep(1000);
@@ -109,6 +114,11 @@ async function chuochuo(e) {
       e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
       await e.group.muteMember(e.operator_id, 60 * muteTime);
       return true;
+    }
+    if (mutetype === 5) {
+      e.reply('哼，要不是我不是管理，早🈲盐你了！');
+      await tool.sleep(1000);
+      e.bot.sendApi('group_poke', { group_id: this.e.group_id, user_id: e.operator_id });
     }
   } else {
     const returnType = Math.round(Math.random() * 3);
