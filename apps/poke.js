@@ -85,7 +85,8 @@ async function handleBotPoke(e) {
         `${configControl.get(`coreConfig`)?.coreUrl}/api/words/getText/poke`
       );
       if (res.data?.success) {
-        let message = cleanText(res.data.data.toString());
+        const message = res.data.data.toString();
+        //let message = cleanText(res.data.data.toString());
         logger.info(message);
         return await e.bot.sendApi('get_ai_record', {
           group_id: e.group_id,
@@ -139,7 +140,6 @@ async function handleBotPoke(e) {
     }
   }
 
-  // 普通 poke 回复
   const returnType = Math.round(Math.random() * 3);
   const replies = [
     '吃我一拳喵！',
