@@ -156,7 +156,7 @@ export default class RssPlugin extends plugin {
             //await Bot.pickGroup(groupId)?.sendMsg(`让${configControl.get('nickName')}看看内容是什么..`);
             // TODO 通过人工智能查看内容
             await Bot.pickGroup(groupId)?.sendMsg(
-              `[标题] ${post.title}\n[作者] ${post.author}\n[来源} ${post.feedTitle}\n正在努力截图..`
+              `[标题] ${post.title}\n[作者] ${post.author}\n[来源] ${post.feedTitle}\n正在努力截图..`
             );
             await screenshot.generateScreenshot(post, tempPath);
             await Bot.pickGroup(groupId)?.sendMsg([segment.image(tempPath)]);
