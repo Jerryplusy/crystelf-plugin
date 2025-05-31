@@ -55,9 +55,9 @@ export default class ReportBots extends plugin {
         message: msg.toString(),
       };
       const url = configControl.get('coreConfig')?.coreUrl;
-      const returnData = await axios.post(url, sendData);
-      if (returnData?.success) {
-        return await e.reply(`操作成功:${returnData?.data.toString()}`);
+      const returnData = await axios.post(`${url}/api/bot/broadcast`, sendData);
+      if (returnData?.data?.success) {
+        return await e.reply(`操作成功:${returnData?.data.data?.toString()}`);
       } else {
         return await e.reply(`广播出现错误，请检查日志..`);
       }

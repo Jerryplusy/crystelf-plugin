@@ -10,7 +10,6 @@ class Handler {
       ['error', this.handleError.bind(this)],
       ['getGroupInfo', this.handleGetGroupInfo.bind(this)],
       ['sendMessage', this.handleSendMessage.bind(this)],
-      ['broadcastMessage', this.broadcastMessage.bind(this)],
       ['reportBots', this.reportBots.bind(this)],
     ]);
   }
@@ -81,21 +80,10 @@ class Handler {
    */
   // TODO 测试可用性
   async handleSendMessage(client, msg) {
-    const botId = msg.data?.botId;
-    const groupId = msg.data?.groupId;
-    const message = msg.data?.message;
+    const botId = Number(msg.data?.botId);
+    const groupId = Number(msg.data?.groupId);
+    const message = msg.data?.message?.toString();
     await botControl.sendMessage(botId, message, groupId);
-  }
-
-  /**
-   * 广播消息，感觉没啥用，用core的广播代替了
-   * @param client
-   * @param msg
-   * @returns {Promise<void>}
-   */
-  async broadcastMessage(client, msg) {
-    const message = msg.data?.message;
-    await botControl.broadcastMessage(message);
   }
 
   async reportBots(client, msg) {
