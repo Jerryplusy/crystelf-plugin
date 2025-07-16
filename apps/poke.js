@@ -43,7 +43,7 @@ async function pokeMaster(e) {
   if (cfg.masterQQ.includes(e.operator_id) || e.self_id === e.operator_id) {
     return;
   }
-  await e.reply(`你几把谁啊，敢戳我主人，胆子好大啊你🤚😡🤚`);
+  await e.reply(`小嘿子不许戳！`);
   await tool.sleep(1000);
   await e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
   return true;
