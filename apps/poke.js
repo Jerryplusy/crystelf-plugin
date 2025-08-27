@@ -71,8 +71,8 @@ async function handleBotPoke(e) {
         type: 'poke',
         id: 'poke',
       });
-      if (res.success) {
-        return await e.reply(res.data);
+      if (res.data.success) {
+        return await e.reply(res.data.data);
       } else {
         return await e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道该说啥好了..`);
       }
@@ -90,8 +90,8 @@ async function handleBotPoke(e) {
         type: 'poke',
         id: 'poke',
       });
-      if (res.success) {
-        const message = res.data.toString();
+      if (res.data.success) {
+        const message = res.data.data.toString();
         //let message = cleanText(res.data.data.toString());
         //logger.info(message);
         return await e.bot.sendApi('get_ai_record', {
