@@ -1,5 +1,5 @@
 import configControl from '../lib/config/configControl.js';
-import rssTools from '../models/rss/rss.js';
+import rssTools from '../modules/rss/rss.js';
 import path from 'path';
 import screenshot from '../lib/rss/screenshot.js';
 import fs from 'fs';

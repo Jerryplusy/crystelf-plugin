@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'path';
 import chokidar from 'chokidar';
 import ConfigControl from '../lib/config/configControl.js';
-import Fanqie from '../models/apps/fanqie/fanqie.js';
+import Fanqie from '../modules/apps/fanqie/fanqie.js';
 
 /**
  * 本功能由 y68(github@yeqiu6080) 提供技术支持

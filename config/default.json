@@ -3,10 +3,6 @@
   "core": true,
   "coreConfig": {
     "coreUrl": "",
-    "wsUrl": "",
-    "wsClientId": "",
-    "wsSecret": "",
-    "wsReConnectInterval": "5000",
     "token": ""
   },
   "maxFeed": 10,
