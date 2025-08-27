@@ -65,11 +65,14 @@ async function handleBotPoke(e) {
 
   if (randomNum < replyText) {
     try {
-      const res = await axios.get(
-        `${configControl.get(`coreConfig`)?.coreUrl}/api/words/getText/poke`
-      );
-      if (res.data?.success) {
-        return await e.reply(res.data.data);
+      const coreUrl = configControl.get(`coreConfig`)?.coreUrl;
+      const targetUrl = `${coreUrl}/api/words/getText`;
+      const res = await axios.post(targetUrl, {
+        type: 'poke',
+        id: 'poke',
+      });
+      if (res.success) {
+        return await e.reply(res.data);
       } else {
         return await e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道该说啥好了..`);
       }
@@ -81,11 +84,14 @@ async function handleBotPoke(e) {
 
   if (randomNum < replyText + replyVoice) {
     try {
-      const res = await axios.get(
-        `${configControl.get(`coreConfig`)?.coreUrl}/api/words/getText/poke`
-      );
-      if (res.data?.success) {
-        const message = res.data.data.toString();
+      const coreUrl = configControl.get(`coreConfig`)?.coreUrl;
+      const targetUrl = `${coreUrl}/api/words/getText`;
+      const res = await axios.post(targetUrl, {
+        type: 'poke',
+        id: 'poke',
+      });
+      if (res.success) {
+        const message = res.data.toString();
         //let message = cleanText(res.data.data.toString());
         //logger.info(message);
         return await e.bot.sendApi('get_ai_record', {
@@ -134,7 +140,7 @@ async function handleBotPoke(e) {
         await e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
         return await tryMute(e, 60 * muteTime);
       case 5:
-        await e.reply('哼，要不是我不是管理，早🈲盐你了！');
+        await e.reply('哼，唔啊啊啊啊啊啊！');
         await tool.sleep(1000);
         return await e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
     }
