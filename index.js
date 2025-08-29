@@ -6,7 +6,7 @@ import { crystelfInit } from './lib/system/init.js';
 import updater from './lib/system/updater.js';
 
 logger.info(
-  chalk.rgb(134, 142, 204)(`crystelf-plugin ${Version.ver} 初始化 ~ by ${Version.author}`)
+  chalk.rgb(134, 142, 204)(`crystelf-plugin ${Version.ver} 初始化~ by ${Version.author}`)
 );
 
 updater.checkAndUpdate().catch((err) => {
