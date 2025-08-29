@@ -4,6 +4,7 @@ import axios from 'axios';
 import configControl from '../lib/config/configControl.js';
 
 const replyPoke = configControl.get('poke')?.replyPoke;
+const nickName = configControl.get('profile')?.nickName;
 
 export default class ChuochuoPlugin extends plugin {
   constructor() {
@@ -64,6 +65,7 @@ async function handleBotPoke(e) {
     const res = await axios.post(targetUrl, {
       type: 'poke',
       id: 'poke',
+      name: nickName,
     });
     if (res.data.success) {
       await e.reply(res.data.data);
@@ -72,10 +74,10 @@ async function handleBotPoke(e) {
         await e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
       }
     } else {
-      await e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道该说啥好了..`);
+      await e.reply(`戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`);
     }
   } catch (err) {
     logger.error('戳一戳请求失败', err);
-    await e.reply(`戳一戳出错了!${configControl.get('nickName')}不知道该说啥好了..`);
+    await e.reply(`戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`);
   }
 }
