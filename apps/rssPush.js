@@ -150,7 +150,7 @@ export default class RssPlugin extends plugin {
           const tempPath = path.join(process.cwd(), 'data', `rss-${Date.now()}.png`);
           if (feed.screenshot) {
             await Bot.pickGroup(groupId)?.sendMsg(
-              `${configControl.get('nickName')}发现了一条新的rss推送!`
+              `${configControl.get('profile')?.nickName}发现了一条新的rss推送!`
             );
             await tools.sleep(1000);
             //await Bot.pickGroup(groupId)?.sendMsg(`让${configControl.get('nickName')}看看内容是什么..`);
