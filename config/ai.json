@@ -1,0 +1,24 @@
+{
+  "mode": "deepseek",
+  "modelType": "deepseek-ai/DeepSeek-V3",
+  "historyLength": 3,
+  "maxLength": 3,
+  "chatTemperature": 1,
+  "pluginTemperature": 0.5,
+  "nickName": "寄气人",
+  "checkChat": {
+    "rdNum": 2,
+    "masterReply": true,
+    "userId": [
+      114514
+    ],
+    "blackGroups": [
+      114,
+      514
+    ],
+    "enableGroups": [
+      11115
+    ]
+  },
+  "maxMessageLength": 100
+}

@@ -12,10 +12,11 @@ logger.info(
 updater.checkAndUpdate().catch((err) => {
   logger.err(err);
 });
-await crystelfInit.CSH();
+//不要加await！！！
+crystelfInit.CSH().then(logger.mark('[crystelf-plugin] crystelf-plugin 完成初始化'));
 
 const appPath = Path.apps;
-const jsFiles = fc.readDirRecursive(appPath, 'js');
+const jsFiles = await fc.readDirRecursive(appPath, 'js');
 
 let ret = jsFiles.map((file) => {
   return import(`./apps/${file}`);

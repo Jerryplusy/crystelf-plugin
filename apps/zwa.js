@@ -39,9 +39,18 @@ export class ZWA extends plugin {
           reg: '^(#|/)?早$|^(#|/)?早安$|^(#|/)?起床(了)$|^(#|/)?早上好$|^(#|/)?早上好！$|^(#|/)?早！$|^(#|/)?早啊$',
           fnc: 'zzz',
         },
+        {
+          reg: '^ccc$',
+          fnc: 'test',
+        },
       ],
     });
   }
+
+  async test(e) {
+    logger.info(configControl.get());
+  }
+
   async www(e) {
     const currentHour = getCurrentHour();
     if (currentHour >= 20 && currentHour <= 23) {

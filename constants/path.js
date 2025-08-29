@@ -6,11 +6,13 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
+//这里储存的都是绝对路径
 const Path = {
   root: rootDir,
   apps: path.join(rootDir, 'apps'),
   components: path.join(rootDir, 'components'),
-  defaultConfig: path.join(rootDir, 'config/default.json'),
+  defaultConfig: path.join(rootDir, 'config/config.json'),
+  defaultConfigPath: path.join(rootDir, 'config'),
   config: path.resolve(rootDir, '../../data/crystelf'),
   constants: path.join(rootDir, 'constants'),
   lib: path.join(rootDir, 'lib'),
