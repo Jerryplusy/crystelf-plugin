@@ -37,18 +37,18 @@ export default class ChuochuoPlugin extends plugin {
 }
 
 async function pokeMaster(e) {
-  logger.info('谁戳主人了...');
+  logger.info('谁戳主人了..');
   if (cfg.masterQQ.includes(e.operator_id) || e.self_id === e.operator_id) {
     return;
   }
-  await e.reply(`小嘿子不许戳！`);
+  await e.reply(`小嘿子不许戳!`, false, 60);
   await tool.sleep(1000);
   await e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
   return true;
 }
 
 async function masterPoke(e) {
-  logger.info(`跟主人一起戳！`);
+  logger.info(`跟主人一起戳!`);
   if (e.target_id !== e.uin) {
     await e.bot.sendApi('group_poke', {
       group_id: e.group_id,
@@ -68,13 +68,17 @@ async function handleBotPoke(e) {
       name: nickName,
     });
     if (res.data.success) {
-      await e.reply(res.data.data);
+      await e.reply(res.data.data, false, 110);
       if (Math.random() < replyPoke) {
         await tool.sleep(1000);
         await e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
       }
     } else {
-      await e.reply(`戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`);
+      await e.reply(
+        `戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`,
+        false,
+        60
+      );
     }
   } catch (err) {
     logger.error('戳一戳请求失败', err);
