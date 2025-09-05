@@ -41,7 +41,7 @@ async function pokeMaster(e) {
   if (cfg.masterQQ.includes(e.operator_id) || e.self_id === e.operator_id) {
     return;
   }
-  await e.reply(`小嘿子不许戳!`, false, 60);
+  await e.reply(`小嘿子不许戳!`, false, { recallMsg: 60 });
   await tool.sleep(1000);
   await e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
   return true;
@@ -77,11 +77,15 @@ async function handleBotPoke(e) {
       await e.reply(
         `戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`,
         false,
-        60
+        { recallMsg: 60 }
       );
     }
   } catch (err) {
     logger.error('戳一戳请求失败', err);
-    await e.reply(`戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`);
+    await e.reply(
+      `戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`,
+      false,
+      { recallMsg: 60 }
+    );
   }
 }
