@@ -1,5 +1,6 @@
 {
   "debug": true,
   "core": true,
-  "maxFeed": 10
+  "maxFeed": 10,
+  "adapter": "lgr"
 }
