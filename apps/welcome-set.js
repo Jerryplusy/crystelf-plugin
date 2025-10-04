@@ -61,7 +61,11 @@ export class welcomeNewcomerSetting extends plugin {
       const filePath = path.join(groupDir, '1');
 
       try {
-        await fs.promises.mkdir(groupDir, { recursive: true });
+        if (!fs.existsSync(groupDir)) await fs.promises.mkdir(groupDir, { recursive: true });
+        const oldFiles = await fs.promises.readdir(groupDir);
+        for (const file of oldFiles) {
+          if (file.startsWith('1.')) await fs.promises.unlink(path.join(groupDir, file));
+        }
         const res = await axios.get(imgUrl, { responseType: 'arraybuffer' });
         const contentType = res.headers['content-type'] || '';
         const ext = contentType.includes('gif') ? 'gif' : 'jpg';
