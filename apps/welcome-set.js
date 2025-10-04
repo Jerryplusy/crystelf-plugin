@@ -31,8 +31,8 @@ export class welcomeNewcomerSetting extends plugin {
    * @returns {Promise<boolean|*>}
    */
   async setWelcome(e) {
-    if (!(e.isMaster || e.group?.is_owner || e.group?.is_admin)) {
-      return e.reply('只有群主或管理员可以设置欢迎消息哦..', true);
+    if (!(e.isMaster || ['owner', 'admin'].includes(e.sender?.role))) {
+      return e.reply('只有群主或管理员可以设置欢迎消息哦~', true);
     }
     const groupId = e.group_id;
     const type = e.msg.includes('文案') ? 'text' : 'image';
@@ -72,13 +72,11 @@ export class welcomeNewcomerSetting extends plugin {
   }
 
   async clearWelcome(e) {
-    if (!(e.isMaster || e.group?.is_owner || e.group?.is_admin)) {
-      return e.reply('只有群主或管理员可以清除设置哦..', true);
+    if (!(e.isMaster || ['owner', 'admin'].includes(e.sender?.role))) {
+      return e.reply('只有群主或管理员可以设置欢迎消息哦~', true);
     }
-
     const groupId = e.group_id;
     const allCfg = configControl.get('newcomer') || {};
-
     if (!allCfg[groupId]) return e.reply('该群没有设置欢迎消息..', true);
     delete allCfg[groupId];
     await configControl.set('newcomer', allCfg);
