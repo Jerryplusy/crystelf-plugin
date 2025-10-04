@@ -2,9 +2,7 @@ import cfg from '../../../lib/config/config.js';
 import tool from '../components/tool.js';
 import axios from 'axios';
 import configControl from '../lib/config/configControl.js';
-
-const replyPoke = configControl.get('poke')?.replyPoke;
-const nickName = configControl.get('profile')?.nickName;
+import ConfigControl from '../lib/config/configControl.js';
 
 export default class ChuochuoPlugin extends plugin {
   constructor() {
@@ -22,6 +20,10 @@ export default class ChuochuoPlugin extends plugin {
   }
 
   async chuoyichuo(e) {
+    if (!ConfigControl.get()?.poke) {
+      return;
+    }
+
     if (cfg.masterQQ.includes(e.target_id) && e.operator_id !== e.target_id) {
       return await pokeMaster(e);
     }
@@ -60,6 +62,8 @@ async function masterPoke(e) {
 
 async function handleBotPoke(e) {
   try {
+    const replyPoke = configControl.get('poke')?.replyPoke;
+    const nickName = configControl.get('profile')?.nickName;
     const coreUrl = configControl.get(`coreConfig`)?.coreUrl;
     const targetUrl = `${coreUrl}/api/words/getText`;
     const res = await axios.post(targetUrl, {

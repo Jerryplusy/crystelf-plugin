@@ -6,6 +6,7 @@ import fs from 'fs';
 import rssCache from '../lib/rss/rssCache.js';
 import schedule from 'node-schedule';
 import tools from '../components/tool.js';
+import ConfigControl from '../lib/config/configControl.js';
 
 export default class RssPlugin extends plugin {
   constructor() {
@@ -39,8 +40,10 @@ export default class RssPlugin extends plugin {
       ],
     });
     if (!global.__rss_job_scheduled) {
-      schedule.scheduleJob('*/10 * * * *', () => this.pushFeeds());
-      global.__rss_job_scheduled = true;
+      if (ConfigControl.get()?.rss) {
+        schedule.scheduleJob('*/10 * * * *', () => this.pushFeeds());
+        global.__rss_job_scheduled = true;
+      }
     }
   }
 
@@ -76,6 +79,9 @@ export default class RssPlugin extends plugin {
    */
   async autoAddFeed(e) {
     //if (/^#rss/i.test(e.msg.trim())) return false;
+    if (!ConfigControl.get()?.rss) {
+      return;
+    }
     const url = e.msg.match(/(https?:\/\/\S+(?:\.atom|\/feed))/i)?.[1];
     if (!url) return false;
     e.msg = `#rss添加 ${url}`;

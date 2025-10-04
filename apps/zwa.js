@@ -13,6 +13,7 @@ import {
 } from '../constants/zwa/wordlist.js';
 import configControl from '../lib/config/configControl.js';
 import axios from 'axios';
+import ConfigControl from '../lib/config/configControl.js';
 
 const path = process.cwd();
 const getCurrentHour = () => new Date().getHours();
@@ -44,6 +45,9 @@ export class ZWA extends plugin {
   }
 
   async www(e) {
+    if (!ConfigControl.get()?.zwa) {
+      return;
+    }
     const currentHour = getCurrentHour();
     if (currentHour >= 20 && currentHour <= 23) {
       if (e.isMaster) {
@@ -104,6 +108,11 @@ export class ZWA extends plugin {
   }
 
   async zzz(e) {
+    logger.info(ConfigControl.get());
+    if (!ConfigControl.get()?.zwa) {
+      return;
+    }
+
     const currentHour = getCurrentHour();
     if (currentHour >= 0 && currentHour <= 4) {
       let text_number = Math.ceil(Math.random() * word4_list['length']);
@@ -149,6 +158,9 @@ export class ZWA extends plugin {
     }
   }
   async wuan(e) {
+    if (!ConfigControl.get()?.zwa) {
+      return;
+    }
     if (e.isMaster) {
       setTimeout(async () => {
         e.reply(['主人中午好好休息哦', segment.image(wa)], true);

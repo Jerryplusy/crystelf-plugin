@@ -1,5 +1,12 @@
 {
   "debug": true,
   "core": true,
+  "poke": true,
+  "60s": true,
+  "fanqie": true,
+  "zwa": true,
+  "rss": true,
+  "help": true,
+  "welcome": true,
   "maxFeed": 10
 }
