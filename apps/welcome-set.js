@@ -1,5 +1,9 @@
 import configControl from '../lib/config/configControl.js';
 import YunzaiUtils from '../lib/yunzai/utils.js';
+import path from 'path';
+import Path from './../constants/path.js';
+import fs from 'fs';
+import axios from 'axios';
 
 export class welcomeNewcomerSetting extends plugin {
   constructor() {
@@ -51,10 +55,26 @@ export class welcomeNewcomerSetting extends plugin {
     if (type === 'image') {
       const imgs = await YunzaiUtils.getImages(e, 1);
       if (!imgs?.length) return e.reply('未检测到图片..', true);
-      cfg.image = imgs[0];
-      allCfg[groupId] = cfg;
-      await configControl.set('newcomer', allCfg);
-      return e.reply('欢迎图片设置成功!', true);
+
+      const imgUrl = imgs[0];
+      const groupDir = path.join(Path.config, 'newcomer', String(e.group_id));
+      const filePath = path.join(groupDir, '1');
+
+      try {
+        await fs.promises.mkdir(groupDir, { recursive: true });
+        const res = await axios.get(imgUrl, { responseType: 'arraybuffer' });
+        const contentType = res.headers['content-type'] || '';
+        const ext = contentType.includes('gif') ? 'gif' : 'jpg';
+        const fullPath = `${filePath}.${ext}`;
+        await fs.promises.writeFile(fullPath, res.data);
+        cfg.image = fullPath;
+        allCfg[e.group_id] = cfg;
+        await configControl.set('newcomer', allCfg);
+        return e.reply(`欢迎图片设置成功..`, true);
+      } catch (err) {
+        logger.error('[crystelf-plugin] 设置欢迎图片出错..', err);
+        return e.reply('保存图片时出错了..', true);
+      }
     }
   }
 
