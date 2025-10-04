@@ -9,16 +9,9 @@
   "checkChat": {
     "rdNum": 2,
     "masterReply": true,
-    "userId": [
-      114514
-    ],
-    "blackGroups": [
-      114,
-      514
-    ],
-    "enableGroups": [
-      11115
-    ]
+    "userId": [],
+    "blackGroups": [],
+    "enableGroups": []
   },
   "maxMessageLength": 100
 }
