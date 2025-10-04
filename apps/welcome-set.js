@@ -10,7 +10,7 @@ export class welcomeNewcomerSetting extends plugin {
       priority: -1000,
       rule: [
         {
-          reg: '^#设置欢迎(文案|图片)([\\s\\S]*)$',
+          reg: '^#设置欢迎(文案|图片)([\\s\\S]*)?$',
           fnc: 'setWelcome',
         },
         {
