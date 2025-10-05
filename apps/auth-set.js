@@ -38,7 +38,8 @@ export class carbonAuthSetting extends plugin {
       return e.reply('只有群主或管理员可以设置验证..', true);
     const botMember = await e.group?.pickMember?.(e.bot.uin);
     const info = await botMember?.getInfo();
-    if (info.role !== 'admin' || info.role !== 'owner') {
+    //logger.info(info.role);
+    if (info.role !== 'admin' && info.role !== 'owner') {
       return e.reply(`${ConfigControl.get('profile')?.nickName}不是管理,没法帮你验证啦..`, true);
     }
     const { cfg, groupCfg } = await this._getCfg(e);
