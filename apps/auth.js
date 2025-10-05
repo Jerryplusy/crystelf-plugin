@@ -113,6 +113,8 @@ export class CarbonAuth extends plugin {
     //加群事件
     Bot.on?.('notice.group.increase', async (e) => {
       if (e.isMaster) return true;
+      const key = `${e.group_id}_${e.user_id}`;
+      if (this.pending.get(key)) return true;
       await this.auth(e, e.group_id, e.user_id);
     });
   }
