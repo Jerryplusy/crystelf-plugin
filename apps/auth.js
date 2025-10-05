@@ -132,7 +132,7 @@ export class CarbonAuth extends plugin {
     const groupCfg = cfg.groups[group_id] || cfg.default;
     if (!groupCfg.enable) return;
     const key = `${group_id}_${user_id}`;
-
+    this.pending.set(key, 1); //初始化
     if (groupCfg.carbon.enable) {
       try {
         const res = await axios.post(`${cfg.url}/captcha/chiralCarbon/getChiralCarbonCaptcha`, {
