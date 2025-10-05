@@ -115,6 +115,7 @@ export class CarbonAuth extends plugin {
       if (e.isMaster) return true;
       const key = `${e.group_id}_${e.user_id}`;
       if (this.pending.get(key)) return true;
+      logger.info(`[crystelf-plugin] 群[${e.group_id}]开始对用户[${e.user_id}]的加群验证`);
       await this.auth(e, e.group_id, e.user_id);
     });
   }
