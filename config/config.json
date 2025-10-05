@@ -2,7 +2,6 @@
   "debug": true,
   "core": true,
   "maxFeed": 10,
-  "adapter": "lgr",
   "poke": true,
   "60s": true,
   "fanqie": true,

@@ -3,6 +3,7 @@ import tool from '../components/tool.js';
 import axios from 'axios';
 import configControl from '../lib/config/configControl.js';
 import ConfigControl from '../lib/config/configControl.js';
+import Group from '../lib/yunzai/group.js';
 
 export default class ChuochuoPlugin extends plugin {
   constructor() {
@@ -51,13 +52,7 @@ async function pokeMaster(e) {
 
 async function masterPoke(e) {
   logger.info(`跟主人一起戳!`);
-  if (e.target_id !== e.uin) {
-    await e.bot.sendApi('group_poke', {
-      group_id: e.group_id,
-      user_id: e.target_id,
-    });
-  }
-  return true;
+  if (e.target_id !== e.uin) await Group.groupPoke(e, e.target_id, e.group_id);
 }
 
 async function handleBotPoke(e) {
@@ -75,10 +70,11 @@ async function handleBotPoke(e) {
       await e.reply(res.data.data, false, 110);
       if (Math.random() < replyPoke) {
         await tool.sleep(1000);
-        await e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
+        return await Group.groupPoke(e, e.operator_id, e.group_id);
       }
+      return true;
     } else {
-      await e.reply(
+      return await e.reply(
         `戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`,
         false,
         { recallMsg: 60 }
@@ -86,7 +82,7 @@ async function handleBotPoke(e) {
     }
   } catch (err) {
     logger.error('戳一戳请求失败', err);
-    await e.reply(
+    return await e.reply(
       `戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`,
       false,
       { recallMsg: 60 }
