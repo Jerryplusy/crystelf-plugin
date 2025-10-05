@@ -20,7 +20,7 @@ export default class ChuochuoPlugin extends plugin {
   }
 
   async chuoyichuo(e) {
-    if (!ConfigControl.get()?.poke) {
+    if (!ConfigControl.get()?.config?.poke) {
       return;
     }
 

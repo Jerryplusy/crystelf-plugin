@@ -117,7 +117,7 @@ export default class FanqiePlugin extends plugin {
    * 解析网页链接中的 book_id
    */
   async handleFanqieLink(e) {
-    if (!ConfigControl.get()?.fanqie) {
+    if (!ConfigControl.get()?.config?.fanqie) {
       return;
     }
     const message = e.msg.trim();
@@ -140,7 +140,7 @@ export default class FanqiePlugin extends plugin {
    * 使用 #fq下载 命令下载
    */
   async downloadByBookId(e) {
-    if (!ConfigControl.get()?.fanqie) {
+    if (!ConfigControl.get()?.config?.fanqie) {
       return;
     }
     const bookId = e.msg.replace(/^#?fq下载/, '').trim();

@@ -45,7 +45,7 @@ export class ZWA extends plugin {
   }
 
   async www(e) {
-    if (!ConfigControl.get()?.zwa) {
+    if (!ConfigControl.get()?.config?.zwa) {
       return;
     }
     const currentHour = getCurrentHour();
@@ -108,8 +108,8 @@ export class ZWA extends plugin {
   }
 
   async zzz(e) {
-    logger.info(ConfigControl.get());
-    if (!ConfigControl.get()?.zwa) {
+    //logger.info(ConfigControl.get());
+    if (!ConfigControl.get()?.config?.zwa) {
       return;
     }
 
@@ -158,7 +158,7 @@ export class ZWA extends plugin {
     }
   }
   async wuan(e) {
-    if (!ConfigControl.get()?.zwa) {
+    if (!ConfigControl.get()?.config?.zwa) {
       return;
     }
     if (e.isMaster) {

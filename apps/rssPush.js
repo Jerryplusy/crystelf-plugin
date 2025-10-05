@@ -79,7 +79,7 @@ export default class RssPlugin extends plugin {
    */
   async autoAddFeed(e) {
     //if (/^#rss/i.test(e.msg.trim())) return false;
-    if (!ConfigControl.get()?.rss) {
+    if (!ConfigControl.get()?.config?.rss) {
       return;
     }
     const url = e.msg.match(/(https?:\/\/\S+(?:\.atom|\/feed))/i)?.[1];
