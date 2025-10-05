@@ -15,17 +15,21 @@ export class welcomeNewcomer extends plugin {
    * @returns {Promise<void>}
    */
   async accept(e) {
-    if (e.user_id === e.self_id) return;
-    const groupId = e.group_id;
-    const cdKey = `Yz:newcomers:${groupId}`;
-    if (await redis.get(cdKey)) return;
-    await redis.set(cdKey, '1', { EX: 30 });
-    const allCfg = configControl.get('newcomer') || {};
-    const cfg = allCfg[groupId] || {};
-    const msgList = [segment.at(e.user_id)];
-    if (cfg.text) msgList.push(cfg.text);
-    if (cfg.image) msgList.push(segment.image(cfg.image));
-    if (!cfg.text && !cfg.image) msgList.push('欢迎新人~！');
-    await e.reply(msgList);
+    try {
+      if (e.user_id === e.self_id) return;
+      const groupId = e.group_id;
+      const cdKey = `Yz:newcomers:${groupId}`;
+      if (await redis.get(cdKey)) return;
+      await redis.set(cdKey, '1', { EX: 30 });
+      const allCfg = configControl.get('newcomer') || {};
+      const cfg = allCfg[groupId] || {};
+      const msgList = [segment.at(e.user_id)];
+      if (cfg.text) msgList.push(cfg.text);
+      if (cfg.image) msgList.push(segment.image(cfg.image));
+      if (!cfg.text && !cfg.image) msgList.push('欢迎新人~！');
+      await e.reply(msgList);
+    } catch (e) {
+      return e.reply('加群欢迎出现错误，请重新设置加群欢迎', true);
+    }
   }
 }
