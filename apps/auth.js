@@ -210,7 +210,7 @@ export class CarbonAuth extends plugin {
     let atElem = (e.message || []).find((m) => m.type === 'at');
     if (!atElem || !atElem.qq) return e.reply('你要验证谁?', true);
     const targetId = Number(atElem.qq);
-    const member = await e.group.pickMember(targetId);
+    const member = await e.group.pickMember(targetId).getInfo();
     if (member.role === 'owner' || member.role === 'admin') {
       return e.reply('这对吗', true);
     }

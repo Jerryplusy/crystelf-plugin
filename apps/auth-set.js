@@ -37,7 +37,7 @@ export class carbonAuthSetting extends plugin {
     if (!(e.sender.role === 'owner' || e.sender.role === 'admin' || e.isMaster))
       return e.reply('只有群主或管理员可以设置验证..', true);
     const botMember = await e.group?.pickMember?.(e.bot.uin);
-    const info = botMember?.info || (await botMember?.getInfo?.());
+    const info = await botMember?.getInfo();
     if (info.role !== 'admin' || info.role !== 'owner') {
       return e.reply(`${ConfigControl.get('profile')?.nickName}不是管理,没法帮你验证啦..`, true);
     }
