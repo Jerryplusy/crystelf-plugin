@@ -191,11 +191,11 @@ async function auth(e, group_id, user_id) {
     } catch (err) {
       logger.error('[crystelf-plugin] 请求手性碳验证API失败..', err);
       e.reply('手性碳api出现异常,已暂时切换至数字验证模式..');
-      await numberAuth(e);
+      await numberAuth(e, key, groupCfg, user_id);
     }
   } else {
     await tools.sleep(500);
-    await numberAuth(e);
+    await numberAuth(e, key, groupCfg, user_id);
   }
 
   if (groupCfg.timeout > 60) {
@@ -221,9 +221,12 @@ async function auth(e, group_id, user_id) {
 /**
  * 数字验证逻辑
  * @param e
+ * @param key
+ * @param groupCfg
+ * @param user_id
  * @returns {Promise<void>}
  */
-async function numberAuth(e) {
+async function numberAuth(e, key, groupCfg, user_id) {
   const a = Math.floor(Math.random() * 100);
   const b = Math.floor(Math.random() * 100);
   const op = Math.random() > 0.5 ? '+' : '-';
