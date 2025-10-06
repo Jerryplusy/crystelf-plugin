@@ -8,5 +8,6 @@
   "zwa": true,
   "rss": true,
   "help": true,
-  "welcome": true
+  "welcome": true,
+  "faceReply": true
 }
