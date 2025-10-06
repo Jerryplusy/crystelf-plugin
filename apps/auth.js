@@ -170,7 +170,7 @@ Bot.on?.('notice.group.increase', async (e) => {
 async function auth(e, group_id, user_id) {
   const cfg = await configControl.get('auth');
   if (!cfg) return;
-  const groupCfg = cfg.groups[group_id] || cfg.default;
+  let groupCfg = cfg.groups[group_id] || cfg.default;
   if (!groupCfg.enable) return;
   const key = `${group_id}_${user_id}`;
   if (groupCfg.carbon.enable) {
@@ -190,15 +190,12 @@ async function auth(e, group_id, user_id) {
       ]);
     } catch (err) {
       logger.error('[crystelf-plugin] 请求手性碳验证API失败..', err);
+      e.reply('手性碳api出现异常,已暂时切换至数字验证模式..');
+      await numberAuth(e);
     }
   } else {
     await tools.sleep(500);
-    const a = Math.floor(Math.random() * 100);
-    const b = Math.floor(Math.random() * 100);
-    const op = Math.random() > 0.5 ? '+' : '-';
-    const ans = op === '+' ? a + b : a - b;
-    pending.set(key, { type: 'math', answer: ans, tries: 0, cfg: groupCfg });
-    e.reply([segment.at(user_id), `请在${groupCfg.timeout}秒内发送${a} ${op} ${b}的计算结果..`]);
+    await numberAuth(e);
   }
 
   if (groupCfg.timeout > 60) {
@@ -219,4 +216,18 @@ async function auth(e, group_id, user_id) {
       await Group.groupKick(e, e.user_id, e.group_id, false);
     }
   }, groupCfg.timeout * 1000);
+}
+
+/**
+ * 数字验证逻辑
+ * @param e
+ * @returns {Promise<void>}
+ */
+async function numberAuth(e) {
+  const a = Math.floor(Math.random() * 100);
+  const b = Math.floor(Math.random() * 100);
+  const op = Math.random() > 0.5 ? '+' : '-';
+  const ans = op === '+' ? a + b : a - b;
+  pending.set(key, { type: 'math', answer: ans, tries: 0, cfg: groupCfg });
+  e.reply([segment.at(user_id), `请在${groupCfg.timeout}秒内发送${a} ${op} ${b}的计算结果..`]);
 }
