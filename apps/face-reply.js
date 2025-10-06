@@ -1,5 +1,6 @@
 import ConfigControl from '../lib/config/configControl.js';
 import Message from '../lib/yunzai/message.js';
+import YunzaiUtils from '../lib/yunzai/utils.js';
 
 export class FaceReply extends plugin {
   constructor() {
@@ -28,9 +29,10 @@ export class FaceReply extends plugin {
         }
       }
     });
+    const adapter = await YunzaiUtils.getAdapter(e);
     if (face.length) {
       for (const f of face) {
-        await Message.emojiLike(e, e.message_id, String(f.id));
+        await Message.emojiLike(e, e.message_id, String(f.id), e.group_id, adapter);
       }
     }
   }
