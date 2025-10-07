@@ -4,6 +4,7 @@ import axios from 'axios';
 import configControl from '../lib/config/configControl.js';
 import ConfigControl from '../lib/config/configControl.js';
 import Group from '../lib/yunzai/group.js';
+import group from '../lib/yunzai/group.js';
 
 export default class ChuochuoPlugin extends plugin {
   constructor() {
@@ -46,7 +47,7 @@ async function pokeMaster(e) {
   }
   await e.reply(`小嘿子不许戳!`, false, { recallMsg: 60 });
   await tool.sleep(1000);
-  await e.bot.sendApi('group_poke', { group_id: e.group_id, user_id: e.operator_id });
+  await Group.groupPoke(e, e.operator_id, e.group_id);
   return true;
 }
 

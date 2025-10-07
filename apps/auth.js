@@ -153,7 +153,7 @@ Bot.on?.('notice.group.decrease', async (e) => {
 
 //加群事件
 Bot.on?.('notice.group.increase', async (e) => {
-  if (e.isMaster) return true;
+  if (e.isMaster || e.user_id === e.bot.uin) return true;
   const key = `${e.group_id}_${e.user_id}`;
   if (pending.get(key)) return true;
   logger.info(`[crystelf-plugin] 群[${e.group_id}]开始对用户[${e.user_id}]的加群验证`);
