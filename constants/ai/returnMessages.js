@@ -58,10 +58,11 @@ const returnMessages = [
   {
     type: 'memory',
     data: 'data to memory',
-    key: ['key1', 'key2'],
+    key: ['key1', 'key2'],//用户说的内容包含什么关键词的时候可能需要这条记忆 or 在主动查询记忆的时候搜索的关键词
+    timeout:30//遗忘时间(天)
   },
   //概括用户说了什么,必须
-  //内容需简洁
+  //内容需简洁,方便自己记忆
   {
     type: 'summary',
     data: 'something',
