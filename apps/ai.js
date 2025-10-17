@@ -39,15 +39,13 @@ export class crystelfAI extends plugin {
       this.isInitialized = true;
       logger.info('[crystelf-ai] 初始化完成');
     } catch (error) {
-      logger.err(`[crystelf-ai] 初始化失败: ${error.message}`);
+      logger.error(`[crystelf-ai] 初始化失败: ${error.message}`);
     }
   }
 
   async index(e) {
     try {
-      if (!this.isInitialized) {
-        await this.init();
-      }
+      //logger.info('111')
       const config = await ConfigControl.get();
       const aiConfig = config?.ai;
       if (!config?.config?.ai) {
@@ -102,7 +100,7 @@ export class crystelfAI extends plugin {
    */
   async processMessage(userMessage, e, aiConfig) {
     const mode = aiConfig?.mode || 'mix';
-
+    logger.info(`[crystelf-ai] 群${e.group_id} 用户${e.user_id}使用${mode}进行回复..`)
     switch (mode) {
       case 'keyword':
         return await this.handleKeywordMode(userMessage, e);
