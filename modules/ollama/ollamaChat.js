@@ -7,7 +7,6 @@ class OllamaChat {
   }
 
   /**
-   *
    * @param apiKey 密钥
    * @param baseUrl ollamaAPI地址
    */
