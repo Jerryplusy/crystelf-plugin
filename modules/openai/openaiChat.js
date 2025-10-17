@@ -17,7 +17,7 @@ class OpenaiChat {
   }
 
   /**
-   * @param prompt 主内容
+   * @param prompt 用户说的话
    * @param chatHistory 聊天历史记录
    * @param model 模型
    * @param temperature 温度
@@ -26,7 +26,7 @@ class OpenaiChat {
    */
   async callAi({ prompt, chatHistory = [], model, temperature, customPrompt }) {
     if (!this.openai) {
-      logger.err('ai未初始化..');
+      logger.err('[crystelf-ai] ai未初始化..');
       return { success: false };
     }
     let systemMessage = {
@@ -49,6 +49,7 @@ class OpenaiChat {
         temperature: temperature,
         frequency_penalty: 0.2,
         presence_penalty: 0.2,
+        response_format:{"type": "json_object"}
       });
 
       const aiResponse = completion.choices[0].message.content;

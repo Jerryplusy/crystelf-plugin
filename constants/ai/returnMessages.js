@@ -44,6 +44,13 @@ const returnMessages = [
     data: 'hello',
   },
   {
+    type: 'function',
+    data: {
+      name: 'search',
+      params:[]
+    }
+  },
+  {
     type: 'like',
     id: '114514',
     num: 10, //默认10次,可根据情绪或需求改变次数,最大10次
@@ -58,14 +65,8 @@ const returnMessages = [
   {
     type: 'memory',
     data: 'data to memory',
-    key: ['key1', 'key2'],//用户说的内容包含什么关键词的时候可能需要这条记忆 or 在主动查询记忆的时候搜索的关键词
+    key: ['key1', 'key2'],//用户说的内容包含什么关键词的时候可能需要这条记忆 or 在主动查询记忆的时候搜索的关键词,最低3个
     timeout:30//遗忘时间(天)
-  },
-  //概括用户说了什么,必须
-  //内容需简洁,方便自己记忆
-  {
-    type: 'summary',
-    data: 'something',
   },
 ];
 
