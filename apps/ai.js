@@ -31,11 +31,11 @@ export class crystelfAI extends plugin {
   async init() {
     try {
       logger.info('[crystelf-ai] 开始初始化...');
-      await SessionManager.init();
-      await KeywordMatcher.init();
-      await AiCaller.init();
-      await MemorySystem.init();
-      await Renderer.init();
+      SessionManager.init();
+      KeywordMatcher.init();
+      AiCaller.init();
+      MemorySystem.init();
+      Renderer.init();
       this.isInitialized = true;
       logger.info('[crystelf-ai] 初始化完成');
     } catch (error) {
@@ -181,6 +181,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
 
   if (isTooLong) {
     //消息太长,使用AI回复
+    logger.info('[crystelf-ai] 消息过长,使用ai回复')
     return await callAiForResponse(userMessage, e, aiConfig);
   } else {
     const matchResult = await KeywordMatcher.matchKeywords(userMessage, 'ai');
@@ -195,6 +196,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
         },
       ];
     } else {
+      logger.info('[crystelf-ai] 关键词匹配失败,使用ai回复')
       //关键词匹配失败,使用AI回复
       return await callAiForResponse(userMessage, e, aiConfig);
     }

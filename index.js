@@ -10,7 +10,7 @@ logger.info(
 );
 
 updater.checkAndUpdate().catch((err) => {
-  logger.err(err);
+  logger.error(err);
 });
 
 await crystelfInit.CSH().then(logger.mark('[crystelf-plugin] crystelf-plugin 完成初始化'));

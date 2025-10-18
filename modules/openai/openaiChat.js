@@ -12,7 +12,7 @@ class OpenaiChat {
   init(apiKey, baseUrl) {
     this.openai = new OpenAI({
       apiKey: apiKey,
-      baseUrl: baseUrl,
+      baseURL: baseUrl,
     });
   }
 
@@ -26,7 +26,7 @@ class OpenaiChat {
    */
   async callAi({ prompt, chatHistory = [], model, temperature, customPrompt }) {
     if (!this.openai) {
-      logger.err('[crystelf-ai] ai未初始化..');
+      logger.error('[crystelf-ai] ai未初始化..');
       return { success: false };
     }
     let systemMessage = {
@@ -43,23 +43,29 @@ class OpenaiChat {
     ];
 
     try {
+      logger.info("[DEBUG] 请求体:", {
+        model: model,
+        messages,
+      });
+
       const completion = await this.openai.chat.completions.create({
         messages: messages,
         model: model,
         temperature: temperature,
         frequency_penalty: 0.2,
         presence_penalty: 0.2,
-        response_format:{"type": "json_object"}
+        response_format:{type: "json_object"},
+        stream:false
       });
 
       const aiResponse = completion.choices[0].message.content;
-
+      logger.info(aiResponse);
       return {
         success: true,
         aiResponse: aiResponse,
       };
     } catch (err) {
-      logger.err(err);
+      logger.error(err);
       return { success: false };
     }
   }
