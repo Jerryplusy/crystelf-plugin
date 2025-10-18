@@ -28,6 +28,8 @@
   "timeout": 30,
   "?maxSessions": "最大同时存在的sessions群聊数量",
   "maxSessions": 10,
+  "?chatHistory": "聊天上下文最大长度",
+  "chatHistory": 10,
   "?keywordCache": "是否缓存关键词到本地",
   "keywordCache": true,
   "?pinyinMatch": "是否启用拼音匹配",

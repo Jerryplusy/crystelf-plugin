@@ -102,7 +102,9 @@ function extractUserMessage(msg, nickname,e) {
   const regex = new RegExp(`^${nickname}\\s*([\\s\\S]*)?$`);
   const match = msg.match(regex);
   if (match && match[1]) {
-    return match[1].trim();
+    let message = match[1].trim();
+    message = `[${e.sender?.nickname},id:${e.user_id}]说:${message}`;
+    return message;
   } else {
     if(e.message){
       let text;
@@ -111,7 +113,7 @@ function extractUserMessage(msg, nickname,e) {
           text = message.text;
         }
       })
-      if(text) return text;
+      if(text) return `[${e.sender?.nickname},id:${e.user_id}]说:${text}`;
     }
   }
   logger.warn('[crystelf-ai] 字符串匹配失败,使用空字符串操作');
@@ -210,10 +212,11 @@ async function callAiForResponse(userMessage, e, aiConfig) {
       return null;
     }
     //搜索相关记忆
-    const memories = await MemorySystem.searchMemories([userMessage], 5);
+    const memories = await MemorySystem.searchMemories(e.user_id,[userMessage], 5);
     //构建聊天历史
-    const chatHistory = session.chatHistory.slice(-10);
-    const aiResult = await AiCaller.callAi(userMessage, chatHistory, memories);
+    const historyLen = aiConfig.chatHistory;
+    const chatHistory = session.chatHistory.slice(-historyLen|-10);
+    const aiResult = await AiCaller.callAi(userMessage, chatHistory, memories,e);
     if (!aiResult.success) {
       logger.error(`[crystelf-ai] AI调用失败: ${aiResult.error}`);
       return [
@@ -227,8 +230,10 @@ async function callAiForResponse(userMessage, e, aiConfig) {
     const processedResponse = await ResponseHandler.processResponse(
       aiResult.response,
       userMessage,
-      e.group_id
+      e.group_id,
+      e.user_id
     );
+
     //更新session
     const newChatHistory = [
       ...chatHistory,
