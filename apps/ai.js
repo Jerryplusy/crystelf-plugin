@@ -82,6 +82,8 @@ async function index(e) {
     if (!userMessage) {
       return;
     }
+    const adapter = await YunzaiUtils.getAdapter(e);
+    await Message.emojiLike(e,e.message_id,128064,e.group_id,adapter);//👀
     const result = await processMessage(userMessage, e, aiConfig);
     if (result && result.length > 0) {
       // TODO 优化流式输出
@@ -200,7 +202,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
 async function callAiForResponse(userMessage, e, aiConfig) {
   try {
     //创建session
-    const session = SessionManager.createOrGetSession(e.group_id, e.user_id);
+    const session = SessionManager.createOrGetSession(e.group_id, e.user_id,e);
     if (!session) {
       logger.info(
         `[crystelf-ai] 群${e.group_id} , 用户${e.user_id}无法创建session,请检查是否聊天频繁`
@@ -234,6 +236,7 @@ async function callAiForResponse(userMessage, e, aiConfig) {
       { role: 'assistant', content: aiResult.response },
     ];
     SessionManager.updateChatHistory(e.group_id, newChatHistory);
+    SessionManager.deactivateSession(e.group_id,e.user_id);
     return processedResponse;
   } catch (error) {
     logger.error(`[crystelf-ai] AI调用失败: ${error.message}`);
