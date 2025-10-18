@@ -10,6 +10,7 @@ import Group from '../lib/yunzai/group.js';
 import Message from '../lib/yunzai/message.js';
 import YunzaiUtils from '../lib/yunzai/utils.js';
 import { segment } from 'oicq';
+import tools from "../components/tool.js";
 const nickname = await ConfigControl.get('profile')?.nickName;
 
 export class crystelfAI extends plugin {
@@ -317,6 +318,7 @@ async function sendResponse(e, messages) {
         default:
           logger.warn(`[crystelf-ai] 不支持的消息类型: ${message.type}`);
       }
+      await tools.sleep(40);
     }
   } catch (error) {
     logger.error(`[crystelf-ai] 发送回复失败: ${error.message}`);
