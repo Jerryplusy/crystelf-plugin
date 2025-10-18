@@ -184,7 +184,7 @@ async function handleAiMode(userMessage, e, aiConfig) {
 }
 
 async function handleMixMode(userMessage, e, aiConfig) {
-  const isTooLong = await KeywordMatcher.isMessageTooLong(userMessage);
+  const isTooLong = await KeywordMatcher.isMessageTooLong(e.msg);
 
   if (isTooLong) {
     //消息太长,使用AI回复
