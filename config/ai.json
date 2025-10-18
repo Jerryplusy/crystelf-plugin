@@ -51,7 +51,7 @@
   },
   "?markdownRenderer": "Markdown渲染配置",
   "markdownRenderer": {
-    "theme": "light",
+    "theme": "dark",
     "fontSize": 14,
     "codeTheme": "github"
   },

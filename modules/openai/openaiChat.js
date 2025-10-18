@@ -59,7 +59,7 @@ class OpenaiChat {
       });
 
       const aiResponse = completion.choices[0].message.content;
-      //logger.info(aiResponse);
+      logger.info(aiResponse);
       return {
         success: true,
         aiResponse: aiResponse,
