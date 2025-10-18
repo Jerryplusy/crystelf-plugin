@@ -1,6 +1,8 @@
 {
   "debug": true,
+  "?core": "是否启用晶灵核心相关功能",
   "core": true,
+  "?maxFeed": "最长订阅",
   "maxFeed": 10,
   "poke": true,
   "60s": true,
@@ -9,5 +11,7 @@
   "rss": true,
   "help": true,
   "welcome": true,
-  "faceReply": true
+  "faceReply": true,
+  "ai": true,
+  "blackWords": true
 }

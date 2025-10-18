@@ -7,7 +7,6 @@ class OllamaChat {
   }
 
   /**
-   *
    * @param apiKey 密钥
    * @param baseUrl ollamaAPI地址
    */
@@ -26,7 +25,7 @@ class OllamaChat {
    */
   async callAi({ prompt, chatHistory = [], model, temperature }) {
     if (!this.apiUrl || !this.apiKey) {
-      logger.err('ollama未初始化..');
+      logger.error('ollama未初始化..');
       return { success: false };
     }
 
@@ -52,7 +51,7 @@ class OllamaChat {
         aiResponse: aiResponse,
       };
     } catch (err) {
-      logger.err(err);
+      logger.error(err);
       return { success: false };
     }
   }
