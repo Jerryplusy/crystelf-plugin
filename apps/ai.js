@@ -328,7 +328,9 @@ async function sendResponse(e, messages) {
 async function handleCodeMessage(e, message) {
   try {
     //渲染代码为图片
-    const imagePath = await Renderer.renderCode(message.data, message.language || 'text');
+    logger.info(message);
+    logger.info(message.language)
+    const imagePath = await Renderer.renderCode(message.data, message.language);
     if (imagePath) {
       await e.reply(segment.image(imagePath));
     } else {
