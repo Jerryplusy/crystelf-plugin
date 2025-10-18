@@ -98,24 +98,31 @@ async function index(e) {
 }
 
 function extractUserMessage(msg, nickname,e) {
-  if (!msg || !nickname) return '';
-  const regex = new RegExp(`^${nickname}\\s*([\\s\\S]*)?$`);
-  const match = msg.match(regex);
-  if (match && match[1]) {
-    let message = match[1].trim();
-    message = `[${e.sender?.nickname},id:${e.user_id}]说:${message}`;
-    return message;
-  } else {
     if(e.message){
-      let text;
+      let text = [];
+      let at = [];
       e.message.forEach(message=>{
+        logger.info(message);
         if(message.type === 'text'){
-          text = message.text;
+          text.push(message.text);
+        }
+        else if(message.type === 'at'){
+          at.push(message.qq);
         }
       })
-      if(text) return `[${e.sender?.nickname},id:${e.user_id}]说:${text}`;
+      let returnMessage = '';
+      if(text.length > 0){
+        text.forEach(message=>{
+          returnMessage += `[${e.sender?.nickname},id:${e.user_id}]说:${message}\n`;
+        })
+      }
+      if(at.length > 0){
+        at.forEach((at)=>{
+          returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了一个人,id是${at}\n`;
+        });
+      }
+      return returnMessage;
     }
-  }
   logger.warn('[crystelf-ai] 字符串匹配失败,使用空字符串操作');
   return '';
 }
