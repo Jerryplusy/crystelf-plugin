@@ -19,6 +19,8 @@
     "axios": "^1.8.4",
     "chalk": "^5.4.1",
     "form-data": "^4.0.2",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.0",
     "openai": "^4.89.0",
     "pinyin-pro": "^3.27.0",
     "rss-parser": "^3.13.0"
