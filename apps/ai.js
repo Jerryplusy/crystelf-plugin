@@ -206,6 +206,17 @@ async function handleMixMode(userMessage, e, aiConfig) {
           recall: 0,
         },
       ];
+      let resToSave = res;
+      resToSave.data += '[词库预设消息]';
+      const newChatHistory = [
+        ...chatHistory,
+        { role: 'user', content: userMessage },
+        { role: 'assistant', content: resToSave },
+      ];
+      SessionManager.updateChatHistory(e.group_id, newChatHistory);
+      SessionManager.deactivateSession(e.group_id,e.user_id);
+
+      return res;
     } else {
       logger.info('[crystelf-ai] 关键词匹配失败,使用ai回复')
       //关键词匹配失败,使用AI回复
