@@ -194,7 +194,10 @@ async function handleMixMode(userMessage, e, aiConfig) {
   } else {
     const matchResult = await KeywordMatcher.matchKeywords(userMessage, 'ai');
     if (matchResult && matchResult.matched) {
-      return [
+      const session = SessionManager.createOrGetSession(e.group_id, e.user_id,e);
+      const historyLen = aiConfig.chatHistory;
+      const chatHistory = session.chatHistory.slice(-historyLen|-10);
+      const res = [
         {
           type: 'message',
           data: matchResult.text,
