@@ -248,7 +248,7 @@ async function callAiForResponse(userMessage, e, aiConfig) {
       return null;
     }
     //搜索相关记忆
-    const memories = await MemorySystem.searchMemories(e.user_id,[userMessage], 5);
+    const memories = await MemorySystem.searchMemories(e.user_id,e.msg||'',5);
     logger.info(`[crystelf-ai] ${memories}`)
     //构建聊天历史
     const historyLen = aiConfig.chatHistory;
