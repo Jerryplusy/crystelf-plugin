@@ -25,6 +25,10 @@ export class crystelfAI extends plugin {
           reg: `^${nickname}([\\s\\S]*)?$`,
           fnc: 'in',
         },
+        {
+          reg: '^(#|/)?重置(对话|会话)$',
+          fnc: 'clearChatHistory',
+        }
       ],
     });
     this.isInitialized = false;
@@ -46,6 +50,14 @@ export class crystelfAI extends plugin {
 
   async in(e){
     return await index(e);
+  }
+
+  async clearChatHistory(e){
+      let session = SessionManager.createOrGetSession(e.group_id,e.user_id,e);
+      if(!session) return e.reply(`当前有群友正在和${nickname}聊天噢,请等待会话结束..`,true);
+      SessionManager.updateChatHistory(e.group_id,[]);
+      SessionManager.deactivateSession(e.group_id,e.user_id);
+      return e.reply('成功重置聊天,聊天记录已经清除了..',true);
   }
 }
 
@@ -237,6 +249,7 @@ async function callAiForResponse(userMessage, e, aiConfig) {
     }
     //搜索相关记忆
     const memories = await MemorySystem.searchMemories(e.user_id,[userMessage], 5);
+    logger.info(`[crystelf-ai] ${memories}`)
     //构建聊天历史
     const historyLen = aiConfig.chatHistory;
     const chatHistory = session.chatHistory.slice(-historyLen|-10);
@@ -257,7 +270,6 @@ async function callAiForResponse(userMessage, e, aiConfig) {
       e.group_id,
       e.user_id
     );
-
     //更新session
     const newChatHistory = [
       ...chatHistory,
@@ -315,7 +327,7 @@ async function sendResponse(e, messages) {
           break;
 
         case 'at':
-          await e.reply(segment.at(message.id));
+          e.reply(segment.at(message.id));
           break;
 
         case 'poke':
@@ -349,12 +361,11 @@ async function handleCodeMessage(e, message) {
     if (imagePath) {
       await e.reply(segment.image(imagePath));
     } else {
-      // 渲染失败 TODO 构造转发消息发送,避免刷屏
-      await e.reply(segment.code(message.data));
+      await e.reply('渲染代码失败了,待会儿再试试吧..',true);
     }
   } catch (error) {
     logger.error(`[crystelf-ai] 处理代码消息失败: ${error.message}`);
-    await e.reply(segment.code(message.data));
+    await e.reply('渲染代码失败了,待会儿再试试吧..',true);
   }
 }
 
@@ -366,11 +377,11 @@ async function handleMarkdownMessage(e, message) {
       await e.reply(segment.image(imagePath));
     } else {
       //渲染失败 TODO 构造转发消息发送,避免刷屏
-      await e.reply(message.data);
+      await e.reply('渲染markdown失败了,待会儿再试试吧..',true);
     }
   } catch (error) {
     logger.error(`[crystelf-ai] 处理Markdown消息失败: ${error.message}`);
-    await e.reply(message.data);
+    await e.reply('渲染markdown失败了,待会儿再试试吧..',true);
   }
 }
 
