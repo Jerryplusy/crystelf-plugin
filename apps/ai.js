@@ -110,32 +110,40 @@ async function index(e) {
   }
 }
 
-function extractUserMessage(msg, nickname,e) {
-    if(e.message){
-      let text = [];
-      let at = [];
-      e.message.forEach(message=>{
-        logger.info(message);
-        if(message.type === 'text'){
-          text.push(message.text);
-        }
-        else if(message.type === 'at'){
-          at.push(message.qq);
-        }
+async function extractUserMessage(msg, nickname, e) {
+  if (e.message) {
+    let text = [];
+    let at = [];
+    e.message.forEach(message => {
+      logger.info(message);
+      if (message.type === 'text') {
+        text.push(message.text);
+      } else if (message.type === 'at') {
+        at.push(message.qq);
+      }
+    })
+    let returnMessage = '';
+    if (text.length > 0) {
+      text.forEach(message => {
+        returnMessage += `[${e.sender?.nickname},id:${e.user_id}]说:${message}\n`;
       })
-      let returnMessage = '';
-      if(text.length > 0){
-        text.forEach(message=>{
-          returnMessage += `[${e.sender?.nickname},id:${e.user_id}]说:${message}\n`;
-        })
-      }
-      if(at.length > 0){
-        at.forEach((at)=>{
-          returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了一个人,id是${at}\n`;
-        });
-      }
-      return returnMessage;
     }
+    if (at.length > 0) {
+      at.forEach((at) => {
+        if(at === e.bot.uin){
+          returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了你,你的id是${at}\n`;
+        }
+        else{
+        returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了一个人,id是${at}\n`;
+        }
+      });
+    }
+    const imgUrls = await YunzaiUtils.getImages(e, 1, true);
+    if(imgUrls){
+      returnMessage += `[${e.sender?.nickname},id:${e.user_id}]发送了一张图片(你可能暂时无法查看)\n`;
+    }
+    return returnMessage;
+  }
   logger.warn('[crystelf-ai] 字符串匹配失败,使用空字符串操作');
   return '';
 }
