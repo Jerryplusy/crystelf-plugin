@@ -91,7 +91,7 @@ async function index(e) {
     if (e.user_id === e.bot.uin) {
       return;
     }
-    const userMessage = extractUserMessage(e.msg, nickname,e);
+    const userMessage = await extractUserMessage(e.msg, nickname,e);
     if (!userMessage) {
       return;
     }
