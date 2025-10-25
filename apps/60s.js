@@ -17,7 +17,7 @@ export default class SixSecond extends plugin {
   }
 
   async six(e) {
-    const url = `${ConfigControl.get('60s')?.url}/v2/60s?encoding=image&force-update=true`;
+    const url = `${ConfigControl.get('60s')?.url}/v2/60s?encoding=image-proxy`;
     return e.reply(segment.image(url), true);
   }
 }
