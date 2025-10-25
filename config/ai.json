@@ -58,6 +58,19 @@
   "?memeConfig": "表情配置",
   "memeConfig": {
     "character": "zhenxun",
-    "availableEmotions": ["angry", "bye", "confused", "default", "good", "goodmorning", "goodnight", "happy", "sad", "shy", "sorry", "surprise"]
+    "availableEmotions": [
+      "angry",
+      "bye",
+      "confused",
+      "default",
+      "good",
+      "goodmorning",
+      "goodnight",
+      "happy",
+      "sad",
+      "shy",
+      "sorry",
+      "surprise"
+    ]
   }
 }
