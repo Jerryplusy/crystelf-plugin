@@ -43,10 +43,10 @@ class OpenaiChat {
     ];
 
     try {
-      logger.info("[DEBUG] 请求体:", {
-        model: model,
-        messages,
-      });
+      //logger.info("[DEBUG] 请求体:", {
+      //model: model,
+      //messages,
+      //});
 
       const completion = await this.openai.chat.completions.create({
         messages: messages,
@@ -54,8 +54,8 @@ class OpenaiChat {
         temperature: temperature,
         frequency_penalty: 0.2,
         presence_penalty: 0.2,
-        response_format:{type: "json_object"},
-        stream:false
+        response_format: { type: 'json_object' },
+        stream: false,
       });
 
       const aiResponse = completion.choices[0].message.content;
