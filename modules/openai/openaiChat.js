@@ -43,10 +43,10 @@ class OpenaiChat {
     ];
 
     try {
-      logger.info("[DEBUG] 请求体:", {
-        model: model,
-        messages,
-      });
+      //logger.info("[DEBUG] 请求体:", {
+        //model: model,
+        //messages,
+      //});
 
       const completion = await this.openai.chat.completions.create({
         messages: messages,
