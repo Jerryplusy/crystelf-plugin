@@ -104,6 +104,7 @@ async function index(e) {
     }
   } catch (error) {
     logger.error(`[crystelf-ai] 处理消息失败: ${error.message}`);
+    const adapter = await YunzaiUtils.getAdapter(e);
     await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
     const config = await ConfigControl.get();
     const aiConfig = config?.ai;
@@ -258,6 +259,7 @@ async function callAiForResponse(userMessage, e, aiConfig) {
       logger.info(
         `[crystelf-ai] 群${e.group_id} , 用户${e.user_id}无法创建session,请检查是否聊天频繁`
       );
+      const adapter = await YunzaiUtils.getAdapter(e);
       await Message.emojiLike(e, e.message_id, 128166, e.group_id, adapter);
       return null;
     }
@@ -294,6 +296,7 @@ async function callAiForResponse(userMessage, e, aiConfig) {
     SessionManager.deactivateSession(e.group_id, e.user_id);
     return processedResponse;
   } catch (error) {
+    const adapter = await YunzaiUtils.getAdapter(e);
     await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
     logger.error(`[crystelf-ai] AI调用失败: ${error.message}`);
     SessionManager.deactivateSession(e.group_id, e.user_id);
