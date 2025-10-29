@@ -272,6 +272,7 @@ async function callAiForResponse(userMessage, e, aiConfig) {
     const aiResult = await AiCaller.callAi(userMessage, chatHistory, memories, e);
     if (!aiResult.success) {
       logger.error(`[crystelf-ai] AI调用失败: ${aiResult.error}`);
+      SessionManager.deactivateSession(e.group_id, e.user_id);
       return [
         {
           type: 'meme',
