@@ -89,10 +89,10 @@ async function index(e) {
       return;
     }
     if (e.user_id === e.bot.uin) {
-      return;
+      return e.reply(segment.image(await Meme.getMeme(aiConfig.character, 'default')));
     }
     const userMessage = await extractUserMessage(e.msg, nickname, e);
-    if (!userMessage) {
+    if (!userMessage || userMessage.length === 0) {
       return;
     }
     const adapter = await YunzaiUtils.getAdapter(e);
@@ -130,6 +130,9 @@ async function extractUserMessage(msg, nickname, e) {
         returnMessage += `[${e.sender?.nickname},id:${e.user_id}]说:${message}\n`;
       });
     }
+    if(at.length === 1 && at[0] === e.bot.uin){
+      return [];
+    }
     if (at.length > 0) {
       at.forEach((at) => {
         if (at === e.bot.uin) {
@@ -146,7 +149,7 @@ async function extractUserMessage(msg, nickname, e) {
     return returnMessage;
   }
   logger.warn('[crystelf-ai] 字符串匹配失败,使用空字符串操作');
-  return '';
+  return [''];
 }
 
 /**
