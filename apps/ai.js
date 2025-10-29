@@ -130,7 +130,7 @@ async function extractUserMessage(msg, nickname, e) {
         returnMessage += `[${e.sender?.nickname},id:${e.user_id}]说:${message}\n`;
       });
     }
-    if(at.length == 1 && at[0] == e.bot.uin){
+    if(at.length == 1 && at[0] == e.bot.uin && text.length == 0){
       return [];
     }
     if (at.length > 0) {
