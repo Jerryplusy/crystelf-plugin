@@ -54,7 +54,6 @@ class OpenaiChat {
         temperature: temperature,
         frequency_penalty: 0.2,
         presence_penalty: 0.2,
-        response_format:{type: "json_object"},
         stream:false
       });
 
