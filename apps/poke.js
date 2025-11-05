@@ -4,7 +4,6 @@ import axios from 'axios';
 import configControl from '../lib/config/configControl.js';
 import ConfigControl from '../lib/config/configControl.js';
 import Group from '../lib/yunzai/group.js';
-import group from '../lib/yunzai/group.js';
 
 export default class ChuochuoPlugin extends plugin {
   constructor() {
@@ -30,7 +29,7 @@ export default class ChuochuoPlugin extends plugin {
       return await pokeMaster(e);
     }
 
-    if (cfg.masterQQ.includes(e.operator_id)) {
+    if (cfg.masterQQ.includes(e.operator_id) && e.target_id !== e.self_id) {
       return await masterPoke(e);
     }
 
@@ -52,8 +51,9 @@ async function pokeMaster(e) {
 }
 
 async function masterPoke(e) {
+  if(e.target_id === e.self_id) return;
   logger.info(`跟主人一起戳!`);
-  if (e.target_id !== e.uin) await Group.groupPoke(e, e.target_id, e.group_id);
+  return await Group.groupPoke(e, e.target_id, e.group_id);
 }
 
 async function handleBotPoke(e) {
