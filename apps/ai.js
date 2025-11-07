@@ -138,8 +138,8 @@ async function extractUserMessage(msg, nickname, e) {
     }
     if (at.length > 0) {
       at.forEach((at) => {
-        if (at === e.bot.uin) {
-          returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了你,你的id是${at}\n`;
+        if (at == e.bot.uin) {
+          //returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了你,你的id是${at}\n`;
         } else {
           returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了一个人,id是${at}\n`;
         }
@@ -347,7 +347,7 @@ async function sendResponse(e, messages) {
           break;
 
         case 'at':
-          e.reply(segment.at(message.id));
+          if(message.id != e.bot.uin)e.reply(segment.at(message.id));
           break;
 
         case 'poke':
@@ -431,7 +431,9 @@ async function handleMemeMessage(e, message) {
 
 async function handlePokeMessage(e, message) {
   try {
+    if(message.id != e.bot.uin){
     await Group.groupPoke(e, message.id, e.group_id);
+    }
   } catch (error) {
     logger.error(`[crystelf-ai] 戳一戳失败: ${error.message}`);
   }
