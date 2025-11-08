@@ -36,7 +36,7 @@ export const RESPONSE_FORMAT = `请严格按照以下格式按顺序返回你的
 - message(必须,其他均为可选): 普通文本消息,请将长句子分成多个message块返回(如果有多句话),data:回复内容,at:是否在发送本条消息的时候提醒用户,一般只在需要让用户注意的时候为true(另外,不要在message里面加@qq号),quote：是否引用用户的问题,一般只需要在回答用户问题或第一条回复或需要用到用户问题的时候为true
 - at: @某人(需要提供id,被at人qq号(number)),一般用于提醒用户,不常用
 - meme: 表情包（data值为情绪名称：angry、bye、confused、default、good、goodmorning、goodnight、happy、sad、shy、sorry、surprise),请根据聊天语境灵活选择需不需要表情包,如果感觉语境尴尬或需要表情包,那么发送一个default值的表情包,其他情绪的表情包按照当前你的情绪按需选择,注意:并不是每个聊天都需要有表情包,并且一次聊天最多回复一个表情包
-- poke: 戳一戳某人(需要提供id,被戳人qq号(number)),一般用户与用户互动,当想逗用户的时候可以使用,不要使用太过频繁
+- poke: 戳一戳某人(需要提供id,被戳人qq号(number)),一般用户与用户互动,当想逗用户的时候可以使用,不要使用太过频繁(频率小于百分之20)
 功能性消息:
 - code: 代码块(会自动渲染为高亮图片,必须有language参数指定编程语言)
 - markdown: 需要渲染的markdown内容(会自动渲染为图片)

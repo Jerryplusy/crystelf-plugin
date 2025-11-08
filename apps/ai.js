@@ -127,8 +127,9 @@ async function extractUserMessage(msg, nickname, e) {
     let returnMessage = '';
     if (text.length > 0) {
       text.forEach((message) => {
-        if (message.length > 0 && message!=='' && message!=='\n') {
-          returnMessage += `[${e.sender?.nickname},id:${e.user_id}]说:${message}\n`;
+        if(message === '') {
+        } else {
+        returnMessage += `[${e.sender?.nickname},id:${e.user_id}]说:${message}`
         }
       });
     }
