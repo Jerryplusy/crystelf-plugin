@@ -117,8 +117,8 @@ async function extractUserMessage(msg, nickname, e) {
     let text = [];
     let at = [];
     e.message.forEach((message) => {
-      logger.info(message);
-      if (message.type === 'text') {
+      //logger.info(message);
+      if (message.type === 'text' && (message.text !== '' || message.text !== '\n')) {
         text.push(message.text);
       } else if (message.type === 'at') {
         at.push(message.qq);
