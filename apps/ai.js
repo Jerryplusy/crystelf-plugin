@@ -95,8 +95,6 @@ async function index(e) {
     if (!userMessage || userMessage.length === 0) {
       return e.reply(segment.image(await Meme.getMeme(aiConfig.character, 'default')));
     }
-    const adapter = await YunzaiUtils.getAdapter(e);
-    await Message.emojiLike(e, e.message_id, 128064, e.group_id, adapter); //👀
     const result = await processMessage(userMessage, e, aiConfig);
     if (result && result.length > 0) {
       // TODO 优化流式输出
@@ -106,8 +104,6 @@ async function index(e) {
     logger.error(`[crystelf-ai] 处理消息失败: ${error.message}`);
     const adapter = await YunzaiUtils.getAdapter(e);
     await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
-    const config = await ConfigControl.get();
-    const aiConfig = config?.ai;
     //return e.reply(segment.image(await Meme.getMeme(aiConfig.character, 'default')));
   }
 }
@@ -117,7 +113,7 @@ async function extractUserMessage(msg, nickname, e) {
     let text = [];
     let at = [];
     e.message.forEach((message) => {
-      //logger.info(message);
+      logger.info(message);
       if (message.type === 'text' && (message.text !== '' || message.text !== '\n')) {
         text.push(message.text);
       } else if (message.type === 'at') {
@@ -235,7 +231,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
       ];
       let resMessage = {
         type: 'message',
-        data: matchResult.text + ' [词库预设消息]',
+        data: matchResult.text,
         at: false,
         quote: false,
         recall: 0,
@@ -269,6 +265,8 @@ async function callAiForResponse(userMessage, e, aiConfig) {
       await Message.emojiLike(e, e.message_id, 128166, e.group_id, adapter);
       return null;
     }
+    const adapter = await YunzaiUtils.getAdapter(e);
+    await Message.emojiLike(e, e.message_id, 128064, e.group_id, adapter); //👀
     //搜索相关记忆
     const memories = await MemorySystem.searchMemories(e.user_id, e.msg || '', 5);
     logger.info(`[crystelf-ai] ${memories}`);
