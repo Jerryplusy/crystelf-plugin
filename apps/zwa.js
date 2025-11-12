@@ -33,10 +33,6 @@ export class ZWA extends plugin {
           fnc: 'www',
         },
         {
-          reg: '^(#|/)?午安$|^(#|/)?中午好$',
-          fnc: 'wuan',
-        },
-        {
           reg: '^(#|/)?早$|^(#|/)?早安$|^(#|/)?起床(了)$|^(#|/)?早上好$|^(#|/)?早上好！$|^(#|/)?早！$|^(#|/)?早啊$',
           fnc: 'zzz',
         },
@@ -154,20 +150,6 @@ export class ZWA extends plugin {
       let text_number = Math.ceil(Math.random() * word6_list['length']);
       setTimeout(async () => {
         e.reply([word6_list[text_number - 1]], true);
-      });
-    }
-  }
-  async wuan(e) {
-    if (!ConfigControl.get()?.config?.zwa) {
-      return;
-    }
-    if (e.isMaster) {
-      setTimeout(async () => {
-        e.reply(['主人中午好好休息哦', segment.image(wa)], true);
-      });
-    } else {
-      setTimeout(async () => {
-        e.reply(['睡个好觉噢', segment.image(wa)], true);
       });
     }
   }
