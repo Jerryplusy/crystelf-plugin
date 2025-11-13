@@ -113,7 +113,7 @@ async function extractUserMessage(msg, nickname, e) {
     let at = [];
     e.message.forEach((message) => {
       logger.info(message);
-      if (message.type === 'text' && (message.text !== '' || message.text !== '\n')) {
+      if (message.type === 'text' && message.text !== '' && message.text !== '\n'){
         text.push(message.text);
       } else if (message.type === 'at') {
         at.push(message.qq);
@@ -141,7 +141,7 @@ async function extractUserMessage(msg, nickname, e) {
       });
     }
     const imgUrls = await YunzaiUtils.getImages(e, 1, true);
-    if (imgUrls) {
+    if (imgUrls.length > 0) {
       returnMessage += `[${e.sender?.nickname},id:${e.user_id}]发送了一张图片(你可能暂时无法查看)\n`;
     }
     return returnMessage;
@@ -351,10 +351,6 @@ async function sendResponse(e, messages) {
           await handlePokeMessage(e, message);
           break;
 
-        case 'like':
-          await handleLikeMessage(e, message);
-          break;
-
         case 'recall':
           await handleRecallMessage(e, message);
           break;
@@ -433,19 +429,6 @@ async function handlePokeMessage(e, message) {
     }
   } catch (error) {
     logger.error(`[crystelf-ai] 戳一戳失败: ${error.message}`);
-  }
-}
-
-async function handleLikeMessage(e, message) {
-  try {
-    // TODO 点赞逻辑
-    const adapter = await YunzaiUtils.getAdapter(e);
-    const messageId = e.message_id || e.source?.id;
-
-    if (messageId) {
-    }
-  } catch (error) {
-    logger.error(`[crystelf-ai] 点赞失败: ${error.message}`);
   }
 }
 
