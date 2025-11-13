@@ -97,7 +97,6 @@ async function index(e) {
     }
     const result = await processMessage(userMessage, e, aiConfig);
     if (result && result.length > 0) {
-      // TODO 优化流式输出
       await sendResponse(e, result);
     }
   } catch (error) {
