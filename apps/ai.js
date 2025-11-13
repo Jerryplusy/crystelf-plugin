@@ -141,7 +141,7 @@ async function extractUserMessage(msg, nickname, e) {
       });
     }
     const imgUrls = await YunzaiUtils.getImages(e, 1, true);
-    if (imgUrls.length > 0) {
+    if (imgUrls) {
       returnMessage += `[${e.sender?.nickname},id:${e.user_id}]发送了一张图片(你可能暂时无法查看)\n`;
     }
     return returnMessage;
