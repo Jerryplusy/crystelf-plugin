@@ -180,7 +180,7 @@ async function processMessage(userMessage, e, aiConfig) {
  * @returns {Promise<[{type: string, data: string}]>}
  */
 async function handleKeywordMode(userMessage, e) {
-  const matchResult = await KeywordMatcher.matchKeywords(userMessage, 'ai');
+  const matchResult = await KeywordMatcher.matchKeywords(e.msg, 'ai');
 
   if (matchResult && matchResult.matched) {
     return [
@@ -214,7 +214,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
     logger.info('[crystelf-ai] 消息过长,使用ai回复');
     return await callAiForResponse(userMessage, e, aiConfig);
   } else {
-    const matchResult = await KeywordMatcher.matchKeywords(userMessage, 'ai');
+    const matchResult = await KeywordMatcher.matchKeywords(e.msg, 'ai');
     if (matchResult && matchResult.matched) {
       const session = SessionManager.createOrGetSession(e.group_id, e.user_id, e);
       const historyLen = aiConfig.chatHistory;
