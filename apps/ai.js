@@ -108,7 +108,7 @@ async function index(e) {
 }
 
 async function extractUserMessage(msg, nickname, e) {
-  if (e.message) {
+  if (e.message && msg && msg.trim()!=='' && msg !== '\n') {
     let text = [];
     let at = [];
     e.message.forEach((message) => {
