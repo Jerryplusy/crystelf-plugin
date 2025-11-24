@@ -124,7 +124,7 @@ async function extractUserMessage(msg, nickname, e) {
       text.forEach((message) => {
         if(message === '') {
         } else {
-        returnMessage += `[${e.sender?.nickname},id:${e.user_id}]说:${message}`
+        returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]说:${message}\n`
         }
       });
     }
@@ -136,13 +136,13 @@ async function extractUserMessage(msg, nickname, e) {
         if (at == e.bot.uin) {
           //returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了你,你的id是${at}\n`;
         } else {
-          returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了一个人,id是${at}\n`;
+          returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]@(at)了一个人,id是${at}\n`;
         }
       });
     }
     const imgUrls = await YunzaiUtils.getImages(e, 1, true);
     if (imgUrls) {
-      returnMessage += `[${e.sender?.nickname},id:${e.user_id}]发送了一张图片(你可能暂时无法查看)\n`;
+      returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]发送了一张图片(你可能暂时无法查看)\n`;
     }
     if(e.source || e.reply_id){
       let reply;
@@ -155,10 +155,10 @@ async function extractUserMessage(msg, nickname, e) {
         const msgArr = Array.isArray(reply) ? reply : reply.message || [];
         msgArr.forEach((msg) => {
           if(msg.type === 'text'){
-            returnMessage += `[${e.sender?.nickname},id:${e.user_id}]引用了一段文本:${msg.text}\n`
+            returnMessage += `[${e.sender?.nickname}]引用了[被引用消息:${reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一段文本:${msg.text}\n`
           }
           if(msg.type === 'image'){
-            returnMessage += `[${e.sender?.nickname},id:${e.user_id}]引用了一张图片(你可能暂时无法查看)\n`;
+            returnMessage += `[${e.sender?.nickname}]引用了[被引用消息:${reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一张图片(你可能暂时无法查看)\n`;
           }
         })
       }
@@ -207,7 +207,7 @@ async function handleKeywordMode(userMessage, e) {
         type: 'message',
         data: matchResult.text,
         at: false,
-        quote: false,
+        quote: -1,
         recall: false,
       },
     ];
@@ -243,7 +243,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
           type: 'message',
           data: matchResult.text,
           at: false,
-          quote: false,
+          quote: -1,
           recall: false,
         },
       ];
@@ -251,7 +251,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
         type: 'message',
         data: matchResult.text,
         at: false,
-        quote: false,
+        quote: -1,
         recall: false,
       };
       const newChatHistory = [
@@ -335,18 +335,23 @@ async function callAiForResponse(userMessage, e, aiConfig) {
  */
 async function sendResponse(e, messages) {
   try {
+    const adapter = await YunzaiUtils.getAdapter(e);
     for (const message of messages) {
       switch (message.type) {
         case 'message':
-          if (message.recall) {
-            await e.reply(message.data, message.quote, {
-              recallMsg: 60,
-              at: message.at,
-            });
+          if(message.quote === -1) {
+            if(message.recall) {
+              await e.reply(message.data, false, {
+                recallMsg: 60,
+                at: message.at,
+              });
+            } else {
+              await e.reply(message.data, false, {
+                at: message.at,
+              });
+            }
           } else {
-            await e.reply(message.data, message.quote, {
-              at: message.at,
-            });
+              await Message.sendGroupMessage(e,e.group_id,message.data,message.at,message.quote,adapter);
           }
           break;
 
@@ -378,7 +383,7 @@ async function sendResponse(e, messages) {
   } catch (error) {
     const adapter = await YunzaiUtils.getAdapter(e);
     await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
-    logger.error(`[crystelf-ai] 发送回复失败: ${error.message}`);
+    logger.error(`[crystelf-ai] 发送回复失败: ${error}`);
   }
 }
 
