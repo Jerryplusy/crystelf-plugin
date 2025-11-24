@@ -144,6 +144,25 @@ async function extractUserMessage(msg, nickname, e) {
     if (imgUrls) {
       returnMessage += `[${e.sender?.nickname},id:${e.user_id}]发送了一张图片(你可能暂时无法查看)\n`;
     }
+    if(e.source || e.reply_id){
+      let reply;
+      if(e.getReply) reply = await e.getReply();
+      else {
+        const history = await e.group.getChatHistory(e.source.seq,1);
+        reply = history?.pop();
+      }
+      if(reply){
+        const msgArr = Array.isArray(reply) ? reply : reply.message || [];
+        msgArr.forEach((msg) => {
+          if(msg.type === 'text'){
+            returnMessage += `[${e.sender?.nickname},id:${e.user_id}]引用了一段文本:${msg.text}\n`
+          }
+          if(msg.type === 'image'){
+            returnMessage += `[${e.sender?.nickname},id:${e.user_id}]引用了一张图片(你可能暂时无法查看)\n`;
+          }
+        })
+      }
+    }
     return returnMessage;
   }
   logger.warn('[crystelf-ai] 字符串匹配失败');
