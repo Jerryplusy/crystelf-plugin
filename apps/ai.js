@@ -189,7 +189,7 @@ async function handleKeywordMode(userMessage, e) {
         data: matchResult.text,
         at: false,
         quote: false,
-        recall: 0,
+        recall: false,
       },
     ];
   }
@@ -225,7 +225,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
           data: matchResult.text,
           at: false,
           quote: false,
-          recall: 0,
+          recall: false,
         },
       ];
       let resMessage = {
@@ -233,7 +233,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
         data: matchResult.text,
         at: false,
         quote: false,
-        recall: 0,
+        recall: false,
       };
       const newChatHistory = [
         ...chatHistory,
@@ -319,9 +319,9 @@ async function sendResponse(e, messages) {
     for (const message of messages) {
       switch (message.type) {
         case 'message':
-          if (message.recall > 0) {
+          if (message.recall) {
             await e.reply(message.data, message.quote, {
-              recallMsg: message.recall,
+              recallMsg: 60,
               at: message.at,
             });
           } else {
