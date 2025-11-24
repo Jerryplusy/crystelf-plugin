@@ -351,10 +351,6 @@ async function sendResponse(e, messages) {
           await handlePokeMessage(e, message);
           break;
 
-        case 'recall':
-          await handleRecallMessage(e, message);
-          break;
-
         default:
           logger.warn(`[crystelf-ai] 不支持的消息类型: ${message.type}`);
       }
@@ -429,16 +425,6 @@ async function handlePokeMessage(e, message) {
     }
   } catch (error) {
     logger.error(`[crystelf-ai] 戳一戳失败: ${error.message}`);
-  }
-}
-
-async function handleRecallMessage(e, message) {
-  try {
-    if (message.seq) {
-      await Message.deleteMsg(e, message.seq);
-    }
-  } catch (error) {
-    logger.error(`[crystelf-ai] 撤回消息失败: ${error.message}`);
   }
 }
 
