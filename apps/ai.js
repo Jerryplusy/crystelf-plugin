@@ -132,13 +132,14 @@ async function extractUserMessage(msg, nickname, e) {
       return [];
     }
     if (at.length > 0) {
-      at.forEach((at) => {
-        if (at == e.bot.uin) {
+      for (const at1 of at) {
+        if (at1 == e.bot.uin) {
           //returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了你,你的id是${at}\n`;
         } else {
-          returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]@(at)了一个人,id是${at}\n`;
+          const atNickname = await e.group.pickMember(at1).nickname || '一个人';
+          returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]@(at)了${atNickname},id是${at1}\n`;
         }
-      });
+      }
     }
     const imgUrls = await YunzaiUtils.getImages(e, 1, true);
     if (imgUrls) {
