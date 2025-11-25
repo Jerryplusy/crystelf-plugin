@@ -9,11 +9,17 @@ logger.info(
   chalk.rgb(134, 142, 204)(`crystelf-plugin ${Version.ver} 初始化~ by ${Version.author}`)
 );
 
-updater.checkAndUpdate().catch((err) => {
-  logger.error(err);
-});
-
 await crystelfInit.CSH().then(logger.mark('[crystelf-plugin] crystelf-plugin 完成初始化'));
+
+import ConfigControl from "./lib/config/configControl.js";
+const appConfig = await ConfigControl.get('config');
+
+if(appConfig.autoUpdate) {
+  logger.info('[crystelf-plugin] 自动更新已启用,正在自动检查更新..');
+  updater.checkAndUpdate().catch((err) => {
+    logger.error(err);
+  });
+}
 
 const appPath = Path.apps;
 const jsFiles = await fc.readDirRecursive(appPath, 'js');

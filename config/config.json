@@ -4,6 +4,8 @@
   "core": true,
   "?maxFeed": "最长订阅",
   "maxFeed": 10,
+  "?autoUpdate": "是否自动更新插件",
+  "autoUpdate": true,
   "poke": true,
   "60s": true,
   "fanqie": true,
