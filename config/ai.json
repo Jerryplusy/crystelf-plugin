@@ -20,6 +20,8 @@
   "maxSessions": 10,
   "?chatHistory": "聊天上下文最大长度",
   "chatHistory": 10,
+  "?maxMessageLength": "最大消息长度",
+  "maxMessageLength": 100,
   "?getChatHistoryLength": "获取到的聊天上下文长度",
   "getChatHistoryLength":20,
   "?keywordCache": "是否缓存关键词到本地",

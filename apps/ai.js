@@ -111,10 +111,17 @@ async function extractUserMessage(msg, nickname, e) {
   if (e.message && msg && msg.trim()!=='' && msg !== '\n') {
     let text = [];
     let at = [];
+    const aiConfig = await ConfigControl.get('ai');
+    const maxMessageLength = aiConfig?.maxMessageLength || 100;
     e.message.forEach((message) => {
       logger.info(message);
       if (message.type === 'text' && message.text !== '' && message.text !== '\n'){
-        text.push(message.text);
+        let displayText = msg.text;
+        if (msg.text && msg.text.length > maxMessageLength) {
+          const omittedChars = msg.text.length - maxMessageLength;
+          displayText = msg.text.substring(0, maxMessageLength) + `...(省略${omittedChars}字)`;
+        }
+        text.push(displayText);
       } else if (message.type === 'at') {
         at.push(message.qq);
       }
