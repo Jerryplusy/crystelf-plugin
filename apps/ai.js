@@ -116,10 +116,10 @@ async function extractUserMessage(msg, nickname, e) {
     e.message.forEach((message) => {
       logger.info(message);
       if (message.type === 'text' && message.text !== '' && message.text !== '\n'){
-        let displayText = msg.text;
-        if (msg.text && msg.text.length > maxMessageLength) {
-          const omittedChars = msg.text.length - maxMessageLength;
-          displayText = msg.text.substring(0, maxMessageLength) + `...(省略${omittedChars}字)`;
+        let displayText = message.text;
+        if (message.text && message.text.length > maxMessageLength) {
+          const omittedChars = message.text.length - maxMessageLength;
+          displayText = message.text.substring(0, maxMessageLength) + `...(省略${omittedChars}字)`;
         }
         text.push(displayText);
       } else if (message.type === 'at') {
