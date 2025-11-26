@@ -163,10 +163,10 @@ async function extractUserMessage(msg, nickname, e) {
         const msgArr = Array.isArray(reply) ? reply : reply.message || [];
         msgArr.forEach((msg) => {
           if(msg.type === 'text'){
-            returnMessage += `[${e.sender?.nickname}]引用了[被引用消息:${reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一段文本:${msg.text}\n`
+            returnMessage += `[${e.sender?.nickname}]引用了[被引用消息:${reply.user_id == e.bot.uin ? '你' : reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一段文本:${msg.text}\n`
           }
           if(msg.type === 'image'){
-            returnMessage += `[${e.sender?.nickname}]引用了[被引用消息:${reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一张图片(你可能暂时无法查看)\n`;
+            returnMessage += `[${e.sender?.nickname}]引用了[被引用消息:${reply.user_id == e.bot.uin ? '你' : reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一张图片(你可能暂时无法查看)\n`;
           }
         })
       }
@@ -214,7 +214,7 @@ async function handleKeywordMode(userMessage, e) {
       {
         type: 'message',
         data: matchResult.text,
-        at: false,
+        at: -1,
         quote: -1,
         recall: false,
       },
@@ -250,7 +250,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
         {
           type: 'message',
           data: matchResult.text,
-          at: false,
+          at: -1,
           quote: -1,
           recall: false,
         },
@@ -258,7 +258,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
       let resMessage = {
         type: 'message',
         data: matchResult.text,
-        at: false,
+        at: -1,
         quote: -1,
         recall: false,
       };
@@ -347,20 +347,7 @@ async function sendResponse(e, messages) {
     for (const message of messages) {
       switch (message.type) {
         case 'message':
-          if(message.quote === -1) {
-            if(message.recall) {
-              await e.reply(message.data, false, {
-                recallMsg: 60,
-                at: message.at,
-              });
-            } else {
-              await e.reply(message.data, false, {
-                at: message.at,
-              });
-            }
-          } else {
-              await Message.sendGroupMessage(e,e.group_id,message.data,message.at,message.quote,adapter);
-          }
+          await Message.sendGroupMessage(e,e.group_id,message.data,message.at,message.quote,adapter);
           break;
 
         case 'code':
