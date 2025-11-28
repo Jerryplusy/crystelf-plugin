@@ -133,7 +133,8 @@ export class CrystelfMusic extends plugin {
       if (type === 'voice' || quality === 1) {
         await Group.sendGroupRecord(e, e.group_id, `file://${audioFile}`, adapter);
       } else {
-        const filename = `${song.displayTitle} - ${song.displayArtist}.${(this.getFileExtension())}`;
+        const extension = await this.getFileExtension();
+        const filename = `${song.displayTitle} - ${song.displayArtist}.${extension}`;
         await Group.sendGroupFile(e, e.group_id, `file://${audioFile}`, filename, adapter);
       }
       musicSearch.clearUserSelection(e.group_id, e.user_id);
@@ -150,9 +151,9 @@ export class CrystelfMusic extends plugin {
    */
   async getFileExtension() {
     const musicConfig =await ConfigControl.get('music');
-    if(musicConfig.quality === 3){
-      return 'flac'
-    }
-    return 'mp3'
+    //if(musicConfig.quality === '3'){
+      //return 'flac'
+    //}
+    return 'flac'
   }
 }
