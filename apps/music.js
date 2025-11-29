@@ -25,11 +25,11 @@ export class CrystelfMusic extends plugin {
       priority: -1000,
       rule: [
         {
-          reg: '^#?点歌\\s+(.+)$',
+          reg: '^#?点歌\\s*(.+)$',
           fnc: 'handleSearch'
         },
         {
-          reg: '^#?听\\s+(.+)$',
+          reg: '^#?听\\s*(.+)',
           fnc: 'handleDirectPlay'
         },
         {
@@ -48,12 +48,11 @@ export class CrystelfMusic extends plugin {
     try {
       const keyword = e.msg.replace(/^#?点歌\s*/, '').trim();
       if (!keyword) {
-        return await e.reply('请输入要点的歌名,例如：#点歌 夜曲');
+        return await e.reply('请输入要点的歌名,例如：#点歌夜曲');
       }
       const adapter = await YunzaiUtils.getAdapter(e);
-      await Message.emojiLike(e,e.message_id,60,e.group_id,adapter);
+      await Message.emojiLike(e, e.message_id, 60, e.group_id, adapter);
       const result = await musicSearch.handleSearch(e, keyword);
-      
       if (result.success) {
         await e.reply({
           type: 'image',
@@ -62,7 +61,6 @@ export class CrystelfMusic extends plugin {
       } else {
         await e.reply(`${result.message}`, true);
       }
-
     } catch (error) {
       logger.error('[crystelf-music] 处理搜索失败:', error);
       await e.reply('搜索失败,请稍后重试', true);
@@ -75,17 +73,34 @@ export class CrystelfMusic extends plugin {
    */
   async handleDirectPlay(e) {
     try {
-      const songName = e.msg.replace(/^#?听\s*/, '').trim();
-      if (!songName) {
-        return await e.reply('请输入要听的歌名,例如：#听 夜曲', true);
+      const content = e.msg.replace(/^#?听\s*/, '').trim();
+      if (!content) {
+        return await e.reply('请输入要听的歌名或序号,例如：#听 夜曲 或 #听 1', true);
       }
-      const adapter = await YunzaiUtils.getAdapter(e);
-      await Message.emojiLike(e,e.message_id,60,e.group_id,adapter);
-      const result = await musicSearch.handleDirectPlay(e, songName);
-      if (result.success) {
-        await this.sendMusicResult(e, result);
+      const index = parseInt(content);
+      if (!isNaN(index) && index >= 1 && index <= 20) {
+        const searchResult = musicSearch.getGroupSearchResult(e.group_id);
+        if (!searchResult) {
+          return await e.reply('没有找到当前可选择的音乐列表，请先搜索歌曲', true);
+        }
+        const adapter = await YunzaiUtils.getAdapter(e);
+        await Message.emojiLike(e, e.message_id, 60, e.group_id, adapter);
+        const result = await musicSearch.handleSelection(e, index);
+        if (result.success) {
+          await this.sendMusicResult(e, result);
+        } else {
+          await e.reply(`${result.message}`, true);
+        }
       } else {
-        await e.reply(`${result.message}`, true);
+        const adapter = await YunzaiUtils.getAdapter(e);
+        await Message.emojiLike(e, e.message_id, 60, e.group_id, adapter);
+
+        const result = await musicSearch.handleDirectPlay(e, content);
+        if (result.success) {
+          await this.sendMusicResult(e, result);
+        } else {
+          await e.reply(`${result.message}`, true);
+        }
       }
     } catch (error) {
       logger.error('[crystelf-music] 处理直接播放失败:', error);
@@ -134,7 +149,9 @@ export class CrystelfMusic extends plugin {
         await Group.sendGroupRecord(e, e.group_id, `file://${audioFile}`, adapter);
       } else {
         const extension = await this.getFileExtension();
-        const filename = `${song.displayTitle} - ${song.displayArtist}.${extension}`;
+        const sanitizedTitle = song.displayTitle.replace(/\s+/g, '_');
+        const sanitizedArtist = song.displayArtist.replace(/\s+/g, '_');
+        const filename = `${sanitizedTitle} - ${sanitizedArtist}.${extension}`;
         await Group.sendGroupFile(e, e.group_id, `file://${audioFile}`, filename, adapter);
       }
       musicSearch.clearUserSelection(e.group_id, e.user_id);
