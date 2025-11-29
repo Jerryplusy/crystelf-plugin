@@ -81,6 +81,21 @@
 
 </details>
 <details>
+<summary>点歌功能</summary>
+
+- 使用[hifi公共音源库](https://github.com/sachinsenal0x64/hifi)提供服务,
+- 由于音源位于海外,大陆连接下载音乐时可能遇到缓慢问题,考虑优化网络环境
+- 由于海外音源,搜歌时考虑使用繁体中文,英文等进行搜索以处理搜索不到的情况
+- 默认下载flac/CD无损级音乐,可在配置文件调整为mp3音质或直接通过语音发送
+- ~~可以听周杰伦~~
+- `#点歌晴天`
+- `#听1`
+- `#听夜曲`
+
+> 直接#听+歌曲名可能播放错误的歌曲
+
+</details>
+<details>
 <summary>晶灵智能✨</summary>
 
 > 与机器人进行普通的对话吧!
@@ -142,7 +157,8 @@
   "welcome": true,
   "faceReply": true,
   "ai": true,
-  "blackWords": true
+  "blackWords": true,
+  "music": true
 }
 ```
 </details>
@@ -215,6 +231,23 @@
 }
 ```
 </details>
+
+<details>
+<summary>music.json</summary>
+
+```
+{
+  "?url": "api地址,不建议修改",
+  "url": "https://api.401658.xyz",
+  "?username&&password": "请勿修改",
+  "username": "crystelf",
+  "password": "1145141919810",
+  "?quality": "1为96kbpsAAC,2为320kbpsAAC,3为最高16-bit/44.1kHzflac",
+  "quality": "3"
+}
+```
+</details>
+
 <details>
 <summary>ai.json</summary>
 
@@ -238,6 +271,10 @@
   "maxSessions": 10,
   "?chatHistory": "聊天上下文最大长度",
   "chatHistory": 10,
+  "?maxMessageLength": "最大消息长度,如果消息长度大于这个值,超出的部分将会被截断",
+  "maxMessageLength": 100,
+  "?getChatHistoryLength": "获取到的聊天上下文长度,ai可以看到多少条群聊的聊天记录",
+  "getChatHistoryLength":20,
   "?blockGroup": "禁用的群聊(黑名单)",
   "blockGroup": [],
   "?whiteGroup": "白名单群聊,存在该部分时,黑名单将被禁用",
