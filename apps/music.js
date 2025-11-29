@@ -127,6 +127,7 @@ export class CrystelfMusic extends plugin {
       const result = await musicSearch.handleSelection(e, index);
       if (result.success) {
         await this.sendMusicResult(e, result);
+        await musicSearch.clearGroupSearch(e.group_id);
       } else {
         await e.reply(`${result.message}`, true);
       }
