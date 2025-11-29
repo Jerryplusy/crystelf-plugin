@@ -15,5 +15,6 @@
   "welcome": true,
   "faceReply": true,
   "ai": true,
-  "blackWords": true
+  "blackWords": true,
+  "music": true
 }

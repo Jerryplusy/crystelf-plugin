@@ -46,6 +46,9 @@ export class CrystelfMusic extends plugin {
    */
   async handleSearch(e) {
     try {
+      if (!ConfigControl.get()?.config?.music) {
+        return;
+      }
       const keyword = e.msg.replace(/^#?点歌\s*/, '').trim();
       if (!keyword) {
         return await e.reply('请输入要点的歌名,例如：#点歌夜曲');
@@ -73,6 +76,9 @@ export class CrystelfMusic extends plugin {
    */
   async handleDirectPlay(e) {
     try {
+      if (!ConfigControl.get()?.config?.music) {
+        return;
+      }
       const content = e.msg.replace(/^#?听\s*/, '').trim();
       if (!content) {
         return await e.reply('请输入要听的歌名或序号,例如：#听 夜曲 或 #听 1', true);
@@ -114,6 +120,9 @@ export class CrystelfMusic extends plugin {
    */
   async handleIndexSelection(e) {
     try {
+      if (!ConfigControl.get()?.config?.music) {
+        return;
+      }
       const index = parseInt(e.msg);
       if (isNaN(index) || index < 1 || index > 20) {
         return;
