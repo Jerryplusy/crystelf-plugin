@@ -91,11 +91,11 @@ async function index(e) {
     if (e.user_id === e.bot.uin) {
       return;
     }
-    const userMessage = await extractUserMessage(e.msg, nickname, e);
-    if (!userMessage || userMessage.length === 0) {
+    const messageData = await extractUserMessage(e.msg, nickname, e);
+    if (!messageData || !messageData.text || messageData.text.length === 0) {
       return e.reply(segment.image(await Meme.getMeme(aiConfig.character, 'default')));
     }
-    const result = await processMessage(userMessage, e, aiConfig);
+    const result = await processMessage(messageData, e, aiConfig);
     if (result && result.length > 0) {
       await sendResponse(e, result);
     }
@@ -113,6 +113,7 @@ async function extractUserMessage(msg, nickname, e) {
     let at = [];
     const aiConfig = await ConfigControl.get('ai');
     const maxMessageLength = aiConfig?.maxMessageLength || 100;
+    const originalMessages = [];
     e.message.forEach((message) => {
       logger.info(message);
       if (message.type === 'text' && message.text !== '' && message.text !== '\n'){
@@ -124,19 +125,29 @@ async function extractUserMessage(msg, nickname, e) {
         text.push(displayText);
       } else if (message.type === 'at') {
         at.push(message.qq);
+      } else if (message.type === 'image') {
+        if (message.image) {
+          originalMessages.push({
+            type: 'image_url',
+            image_url: {
+              url: message.image
+            }
+          });
+        }
       }
     });
+    
     let returnMessage = '';
     if (text.length > 0) {
       text.forEach((message) => {
         if(message === '') {
         } else {
-        returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]说:${message}\n`
+        returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]说:${message}\n`;
         }
       });
     }
     if(at.length == 1 && at[0] == e.bot.uin && text.length == 0){
-      return [];
+      return { text: [], originalMessages: originalMessages };
     }
     if (at.length > 0) {
       for (const at1 of at) {
@@ -144,13 +155,14 @@ async function extractUserMessage(msg, nickname, e) {
           //returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了你,你的id是${at}\n`;
         } else {
           const atNickname = await e.group.pickMember(at1).nickname || '一个人';
-          returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]@(at)了${atNickname},id是${at1}\n`;
+          const tempMessage = `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]@(at)了${atNickname},id是${at1}\n`
+          returnMessage += tempMessage;
+          originalMessages.push({
+            type: 'text',
+            content: tempMessage
+          });
         }
       }
-    }
-    const imgUrls = await YunzaiUtils.getImages(e, 1, true);
-    if (imgUrls) {
-      returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]发送了一张图片(你可能暂时无法查看)\n`;
     }
     if(e.source || e.reply_id){
       let reply;
@@ -163,18 +175,33 @@ async function extractUserMessage(msg, nickname, e) {
         const msgArr = Array.isArray(reply) ? reply : reply.message || [];
         msgArr.forEach((msg) => {
           if(msg.type === 'text'){
-            returnMessage += `[${e.sender?.nickname}]引用了[被引用消息:${reply.user_id == e.bot.uin ? '你' : reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一段文本:${msg.text}\n`
+            const tempMessage = `[${e.sender?.nickname}]引用了[被引用消息:${reply.user_id == e.bot.uin ? '你' : reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一段文本:${msg.text}\n`
+            returnMessage += tempMessage;
+            originalMessages.push({
+              type: 'text',
+              content: tempMessage
+            });
           }
           if(msg.type === 'image'){
             returnMessage += `[${e.sender?.nickname}]引用了[被引用消息:${reply.user_id == e.bot.uin ? '你' : reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一张图片(你可能暂时无法查看)\n`;
+            originalMessages.push({
+              type: 'image_url',
+              image_url: {
+                url: msg.image
+              }
+            });
           }
         })
       }
     }
-    return returnMessage;
+    const imgUrls = await YunzaiUtils.getImages(e, 1, true);
+    if (imgUrls) {
+      returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]发送了一张图片(你可能暂时无法查看)\n`;
+    }
+    return { text: returnMessage, originalMessages: originalMessages };
   }
   logger.warn('[crystelf-ai] 字符串匹配失败');
-  return [];
+  return { text: [], originalMessages: [] };
 }
 
 /**
@@ -202,11 +229,11 @@ async function processMessage(userMessage, e, aiConfig) {
 
 /**
  * 关键词模式
- * @param userMessage
+ * @param messageData
  * @param e
  * @returns {Promise<[{type: string, data: string}]>}
  */
-async function handleKeywordMode(userMessage, e) {
+async function handleKeywordMode(messageData, e) {
   const matchResult = await KeywordMatcher.matchKeywords(e.msg, 'ai');
 
   if (matchResult && matchResult.matched) {
@@ -229,17 +256,17 @@ async function handleKeywordMode(userMessage, e) {
   ];
 }
 
-async function handleAiMode(userMessage, e, aiConfig) {
-  return await callAiForResponse(userMessage, e, aiConfig);
+async function handleAiMode(messageData, e, aiConfig) {
+  return await callAiForResponse(messageData, e, aiConfig);
 }
 
-async function handleMixMode(userMessage, e, aiConfig) {
+async function handleMixMode(messageData, e, aiConfig) {
   const isTooLong = await KeywordMatcher.isMessageTooLong(e.msg);
 
   if (isTooLong) {
     //消息太长,使用AI回复
     logger.info('[crystelf-ai] 消息过长,使用ai回复');
-    return await callAiForResponse(userMessage, e, aiConfig);
+    return await callAiForResponse(messageData, e, aiConfig);
   } else {
     const matchResult = await KeywordMatcher.matchKeywords(e.msg, 'ai');
     if (matchResult && matchResult.matched) {
@@ -264,7 +291,7 @@ async function handleMixMode(userMessage, e, aiConfig) {
       };
       const newChatHistory = [
         ...chatHistory,
-        { role: 'user', content: userMessage },
+        { role: 'user', content: messageData.text },
         { role: 'assistant', content: JSON.stringify(resMessage) },
       ];
       SessionManager.updateChatHistory(e.group_id, newChatHistory);
@@ -274,12 +301,12 @@ async function handleMixMode(userMessage, e, aiConfig) {
     } else {
       logger.info('[crystelf-ai] 关键词匹配失败,使用ai回复');
       //关键词匹配失败,使用AI回复
-      return await callAiForResponse(userMessage, e, aiConfig);
+      return await callAiForResponse(messageData, e, aiConfig);
     }
   }
 }
 
-async function callAiForResponse(userMessage, e, aiConfig) {
+async function callAiForResponse(messageData, e, aiConfig) {
   try {
     //创建session
     const session = SessionManager.createOrGetSession(e.group_id, e.user_id, e);
@@ -299,7 +326,10 @@ async function callAiForResponse(userMessage, e, aiConfig) {
     //构建聊天历史
     const historyLen = aiConfig.chatHistory;
     const chatHistory = session.chatHistory.slice(-historyLen | -10);
-    const aiResult = await AiCaller.callAi(userMessage, chatHistory, memories, e);
+    
+    // 根据多模态开关决定调用方式
+    const aiResult = await AiCaller.callAi(messageData.text, chatHistory, memories, e, messageData.originalMessages);
+    
     if (!aiResult.success) {
       logger.error(`[crystelf-ai] AI调用失败: ${aiResult.error}`);
       SessionManager.deactivateSession(e.group_id, e.user_id);
@@ -313,14 +343,14 @@ async function callAiForResponse(userMessage, e, aiConfig) {
     //处理响应
     const processedResponse = await ResponseHandler.processResponse(
       aiResult.response,
-      userMessage,
+      messageData.text,
       e.group_id,
       e.user_id
     );
     //更新session
     const newChatHistory = [
       ...chatHistory,
-      { role: 'user', content: userMessage },
+      { role: 'user', content: messageData.text },
       { role: 'assistant', content: aiResult.response },
     ];
     SessionManager.updateChatHistory(e.group_id, newChatHistory);
