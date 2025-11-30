@@ -22,34 +22,40 @@ class OpenaiChat {
    * @param model 模型
    * @param temperature 温度
    * @param customPrompt 提示词
+   * @param messages 多模态消息数组
    * @returns {Promise<{success: boolean, aiResponse: string}|{}>}
    */
-  async callAi({ prompt, chatHistory = [], model, temperature, customPrompt }) {
+  async callAi({ prompt, chatHistory = [], model, temperature, customPrompt, messages }) {
     if (!this.openai) {
       logger.error('[crystelf-ai] ai未初始化..');
       return { success: false };
     }
-    let systemMessage = {
-      role: 'system',
-      content: customPrompt || '',
-    };
-    const messages = [
-      systemMessage,
-      ...chatHistory,
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ];
+    let finalMessages;
+    if (messages && messages.length > 0) {
+      finalMessages = messages;
+    } else {
+      let systemMessage = {
+        role: 'system',
+        content: customPrompt || '',
+      };
+      finalMessages = [
+        systemMessage,
+        ...chatHistory,
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ];
+    }
 
     try {
      // logger.info("[DEBUG] 请求体:", {
         //model: model,
-       // messages,
+       // messages: finalMessages,
       //});
 
       const completion = await this.openai.chat.completions.create({
-        messages: messages,
+        messages: finalMessages,
         model: model,
         temperature: temperature,
         frequency_penalty: 0.2,

@@ -159,15 +159,22 @@ export class CrystelfMusic extends plugin {
         await Group.sendGroupRecord(e, e.group_id, `file://${audioFile}`, adapter);
       } else {
         const extension = await this.getFileExtension();
-        const sanitizedTitle = song.displayTitle.replace(/\s+/g, '_');
-        const sanitizedArtist = song.displayArtist.replace(/\s+/g, '_');
+        // 过滤非法字符
+        const sanitize = (str) => str.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+
+        const sanitizedTitle = sanitize(song.displayTitle);
+        const sanitizedArtist = sanitize(song.displayArtist);
         const filename = `${sanitizedTitle} - ${sanitizedArtist}.${extension}`;
-        await Group.sendGroupFile(e, e.group_id, `file://${audioFile}`, filename, adapter);
+        try {
+            await Group.sendGroupFile(e, e.group_id, `file://${audioFile}`, filename, adapter);
+        } catch (fileErr) {
+            logger.warn(`[crystelf-music] 文件发送失败,尝试转为语音: ${fileErr.message}`);
+            await Group.sendGroupRecord(e, e.group_id, `file://${audioFile}`, adapter);
+        }
       }
       musicSearch.clearUserSelection(e.group_id, e.user_id);
-      logger.info(`[crystelf-music] 音乐发送成功: ${song.displayTitle}`);
     } catch (error) {
-      logger.error('[crystelf-music] 发送音乐结果失败:', error);
+      logger.error('[crystelf-music] 发送音乐失败:', error);
       await e.reply('发送音乐失败,请稍后重试', true);
     }
   }
@@ -177,7 +184,7 @@ export class CrystelfMusic extends plugin {
    * @returns {string} 文件扩展名
    */
   async getFileExtension() {
-    const musicConfig =await ConfigControl.get('music');
+    const musicConfig = await ConfigControl.get('music');
     //if(musicConfig.quality === '3'){
       //return 'flac'
     //}
