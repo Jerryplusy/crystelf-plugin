@@ -25,13 +25,13 @@ class OpenaiChat {
    * @param messages 多模态消息数组
    * @returns {Promise<{success: boolean, aiResponse: string}|{}>}
    */
-  async callAi({ prompt, chatHistory = [], model, temperature, customPrompt, messages }) {
+  async callAi({ prompt, chatHistory = [], model, temperature, customPrompt, messages = [] }) {
     if (!this.openai) {
       logger.error('[crystelf-ai] ai未初始化..');
       return { success: false };
     }
     let finalMessages;
-    if (messages && messages.length > 0) {
+    if (messages.length > 0) {
       finalMessages = messages;
     } else {
       let systemMessage = {

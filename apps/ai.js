@@ -130,7 +130,7 @@ async function extractUserMessage(msg, nickname, e) {
           originalMessages.push({
             type: 'image_url',
             image_url: {
-              url: message.image
+              url: message.url
             }
           });
         }
@@ -142,7 +142,12 @@ async function extractUserMessage(msg, nickname, e) {
       text.forEach((message) => {
         if(message === '') {
         } else {
-        returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]说:${message}\n`;
+          const tempMessage = `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]说:${message}\n`
+          returnMessage += tempMessage;
+          originalMessages.push({
+            type: 'text',
+            content: tempMessage
+          });
         }
       });
     }
@@ -187,7 +192,7 @@ async function extractUserMessage(msg, nickname, e) {
             originalMessages.push({
               type: 'image_url',
               image_url: {
-                url: msg.image
+                url: msg.url
               }
             });
           }
