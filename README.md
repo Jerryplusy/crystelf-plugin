@@ -115,8 +115,8 @@
 - [X] 支持获取引用消息,使用seq标记  
 - [X] 支持群聊上下文消息  
 - [ ] 支持调用更多工具  
-- [ ] 获取引用消息  
-- [ ] 适配多模态模型,查看图片等  
+- [X] 获取引用消息  
+- [X] 适配多模态模型,查看图片等  
 - [ ] 支持联网搜索  
 - [ ] 支持生成图片  
 - [ ] 支持渲染数学公式  
@@ -158,7 +158,8 @@
   "faceReply": true,
   "ai": true,
   "blackWords": true,
-  "music": true
+  "music": true,
+  "auth": true
 }
 ```
 </details>
@@ -259,6 +260,10 @@
   "apiKey": "", //你的api密钥
   "?modelType": "模型名称,请根据baseApi填写的服务商的对应的模型",
   "modelType": "deepseek-ai/DeepSeek-V3.2-Exp",
+  "?multimodalEnabled": "是否启用多模态模型模式,启用后将忽略文本模型",//开启多模态模式后,将默认使用多模态模型回复
+  "multimodalEnabled": false,//多模态模式可以处理视频,图片等
+  "?multimodalModel": "多模态模型名称",
+  "multimodalModel": "Qwen/Qwen2.5-VL-72B-Instruct",
   "?temperature": "聊天温度,可选0-2.0,温度越高创造性越高",
   "temperature": 1.2,
   "?concurrency": "最大同时聊天群数,一个群最多一个人聊天",
