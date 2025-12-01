@@ -21,7 +21,7 @@ export class CrystelfMusic extends plugin {
     super({
       name: 'crystelf-music',
       dsc: '音乐点歌插件',
-      event: 'message.group',
+      event: 'message',
       priority: -1000,
       rule: [
         {

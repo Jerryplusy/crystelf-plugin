@@ -13,7 +13,6 @@ export class FaceReply extends plugin {
   }
 
   async accept(e) {
-    if (!ConfigControl.get('config')?.faceReply) return;
     if (!e.message_id || e.message.length === 0) return;
     let face = [];
     e.message.forEach((m) => {

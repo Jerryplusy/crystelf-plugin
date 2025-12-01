@@ -23,22 +23,65 @@ if(appConfig.autoUpdate) {
 
 const appPath = Path.apps;
 const jsFiles = await fc.readDirRecursive(appPath, 'js');
+const enabledApps = [];
+const disabledApps = [];
 
-let ret = jsFiles.map((file) => {
+for (const file of jsFiles) {
+  const name = file.replace('.js', '');
+  const configKey = getConfigKey(name);
+  if (appConfig[configKey] === false) {
+    disabledApps.push(name);
+    logger.info(`[crystelf-plugin] 插件 ${name} 已禁用,跳过加载`);
+  } else {
+    enabledApps.push(file);
+  }
+}
+
+if (disabledApps.length > 0) {
+  logger.info(`[crystelf-plugin] 已跳过 ${disabledApps.length} 个禁用的插件: ${disabledApps.join(', ')}`);
+}
+
+let ret = enabledApps.map((file) => {
   return import(`./apps/${file}`);
 });
 
 ret = await Promise.allSettled(ret);
 
 let apps = {};
-for (let i in jsFiles) {
-  let name = jsFiles[i].replace('.js', '');
-
+for (let i in enabledApps) {
+  let name = enabledApps[i].replace('.js', '');
   if (ret[i].status !== 'fulfilled') {
-    logger.error(name, ret[i].reason);
+    logger.error(`[crystelf-plugin] 插件 ${name} 加载失败:`, ret[i].reason);
     continue;
   }
   apps[name] = ret[i].value[Object.keys(ret[i].value)[0]];
 }
+logger.info(`[crystelf-plugin] 成功加载 ${Object.keys(apps).length} 个插件`);
 
 export { apps };
+
+/**
+ * 将插件文件名映射到配置键名
+ * @param {string} fileName
+ * @returns {string}
+ */
+function getConfigKey(fileName) {
+  const keyMap = {
+    '60s': '60s',
+    'ai': 'ai',
+    'auth': 'auth',
+    'auth-set': 'auth',
+    'face-reply': 'faceReply',
+    'face-reply-message': 'faceReply',
+    'fanqie': 'fanqie',
+    'help': 'help',
+    'music': 'music',
+    'poke': 'poke',
+    'rssPush': 'rss',
+    'welcome': 'welcome',
+    'welcome-set': 'welcome',
+    'zwa': 'zwa'
+  };
+  
+  return keyMap[fileName] || fileName;
+}

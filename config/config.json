@@ -16,5 +16,6 @@
   "faceReply": true,
   "ai": true,
   "blackWords": true,
-  "music": true
+  "music": true,
+  "auth": true
 }

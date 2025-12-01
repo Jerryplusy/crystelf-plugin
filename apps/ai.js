@@ -76,7 +76,6 @@ Bot.on('message.group', async (e) => {
 
 async function index(e) {
   try {
-    //logger.info('111')
     const config = await ConfigControl.get();
     const aiConfig = config?.ai;
     if (!config?.config?.ai) {
