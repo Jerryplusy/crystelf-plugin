@@ -352,10 +352,23 @@ async function callAiForResponse(messageData, e, aiConfig) {
       e.user_id
     );
     //更新session
+    let userMessageContent, assistantMessageContent;
+    const usedMultimodal = aiConfig.multimodalEnabled && 
+      (!aiConfig.smartMultimodal || messageData.originalMessages?.some(msg => msg.type === 'image_url'));
+    
+    if (usedMultimodal && messageData.originalMessages) {
+      userMessageContent = messageData.originalMessages.map(msg => {
+        if (msg.type === 'text') return msg.content;
+        if (msg.type === 'image_url') return `[图片消息]`;
+      }).filter(Boolean).join('');
+    } else {
+      userMessageContent = messageData.text;
+    }
+    assistantMessageContent = aiResult.response;
     const newChatHistory = [
       ...chatHistory,
-      { role: 'user', content: messageData.text },
-      { role: 'assistant', content: aiResult.response },
+      { role: 'user', content: userMessageContent },
+      { role: 'assistant', content: assistantMessageContent },
     ];
     SessionManager.updateChatHistory(e.group_id, newChatHistory);
     SessionManager.deactivateSession(e.group_id, e.user_id);
