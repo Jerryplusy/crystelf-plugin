@@ -510,7 +510,6 @@ async function handleImageMessage(e, message) {
     }
 
     let sourceImageArr = null;
-    if (message.edit) {
       // 从用户消息中提取图片URL
       const imageMessages = [];
       e.message.forEach((message) => {
@@ -539,18 +538,12 @@ async function handleImageMessage(e, message) {
       if (imageMessages.length > 0) {
         sourceImageArr = imageMessages;
       } else {
-        logger.warn('[crystelf-ai] 编辑模式下未找到用户发送的图片');
-        await e.reply('孩子你图片呢?', true);
-        return;
+        logger.warn('[crystelf-ai] 未找到用户发送的图片,将使用生成模式..');
       }
-    }
-
-    logger.info(`[crystelf-ai] 处理图像消息 - 用户: ${e.user_id}, 模式: ${message.edit ? '编辑' : '生成'}, 描述: ${message.data}`);
     logger.info(`[crystelf-ai] 用户使用图像配置 - 模型: ${imageConfig.model || '默认'}, API: ${imageConfig.baseApi || '默认'}`);
     const imageMessage = {
       data: message.data,
-      edit: message.edit,
-      sourceImageUrl: sourceImageArr
+      sourceImageArr: sourceImageArr
     };
 
     const { default: aiCaller } = await import('../lib/ai/aiCaller.js');
