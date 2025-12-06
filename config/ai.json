@@ -77,6 +77,8 @@
   "imageConfig": {
     "?enabled": "是否启用图像生成功能",
     "enabled": true,
+    "?imageMode": "图像生成模式: 'openai'使用/v1/images/generations接口, 'chat'使用对话式生图模型(如gemini-3-pro-image-preview)",
+    "imageMode": "openai",
     "?model": "图像生成模型名称(支持gemini-3-pro-image-preview等)",
     "model": "gemini-3-pro-image-preview",
     "?baseApi": "图像生成API基础地址(不加v1后面的)",
