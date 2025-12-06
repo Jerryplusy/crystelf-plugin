@@ -417,6 +417,10 @@ async function sendResponse(e, messages) {
           await handlePokeMessage(e, message);
           break;
 
+        case 'image':
+          await handleImageMessage(e, message);
+          break;
+
         default:
           logger.warn(`[crystelf-ai] 不支持的消息类型: ${message.type}`);
       }
@@ -491,6 +495,104 @@ async function handlePokeMessage(e, message) {
     }
   } catch (error) {
     logger.error(`[crystelf-ai] 戳一戳失败: ${error.message}`);
+  }
+}
+
+async function handleImageMessage(e, message) {
+  try {
+    const { default: userConfigManager } = await import('../lib/ai/userConfigManager.js');
+    const userConfig = await userConfigManager.getUserConfig(String(e.user_id));
+    const imageConfig = userConfig.imageConfig;
+    
+    if (!imageConfig?.enabled) {
+      logger.warn('[crystelf-ai] 图像生成功能未启用');
+      return;
+    }
+
+    let sourceImageArr = null;
+    if (message.edit) {
+      // 从用户消息中提取图片URL
+      const imageMessages = [];
+      e.message.forEach((message) => {
+        if (message.type === 'image') {
+          if (message.image) {
+            imageMessages.push(message.url);
+          }
+        }
+      });
+      if(e.source || e.reply_id){
+        let reply;
+        if(e.getReply) reply = await e.getReply();
+        else {
+          const history = await e.group.getChatHistory(e.source.seq,1);
+          reply = history?.pop();
+        }
+        if(reply){
+          const msgArr = Array.isArray(reply) ? reply : reply.message || [];
+          msgArr.forEach((msg) => {
+            if(msg.type === 'image'){
+              imageMessages.push(msg.url);
+            }
+          })
+        }
+      }
+      if (imageMessages.length > 0) {
+        sourceImageArr = imageMessages;
+      } else {
+        logger.warn('[crystelf-ai] 编辑模式下未找到用户发送的图片');
+        await e.reply('孩子你图片呢?', true);
+        return;
+      }
+    }
+
+    logger.info(`[crystelf-ai] 处理图像消息 - 用户: ${e.user_id}, 模式: ${message.edit ? '编辑' : '生成'}, 描述: ${message.data}`);
+    logger.info(`[crystelf-ai] 用户使用图像配置 - 模型: ${imageConfig.model || '默认'}, API: ${imageConfig.baseApi || '默认'}`);
+    const imageMessage = {
+      data: message.data,
+      edit: message.edit,
+      sourceImageUrl: sourceImageArr
+    };
+
+    const { default: aiCaller } = await import('../lib/ai/aiCaller.js');
+    const result = await aiCaller.callAi(
+      '',
+      [],
+      [],
+      e,
+      [],
+      [imageMessage]
+    );
+
+    if (result.success) {
+      let imageUrl = null;
+      let description = message.data;
+      
+      try {
+        const responseData = JSON.parse(result.rawResponse);
+        if (responseData && responseData.length > 0 && responseData[0].type === 'image') {
+          imageUrl = responseData[0].url;
+          description = responseData[0].description || message.data;
+        }
+      } catch (parseError) {
+        logger.warn(`[crystelf-ai] 解析图像响应失败,响应文本: ${parseError.message}`);
+        await e.reply('图像生成失败了,待会儿再试试吧~', true);
+        return;
+      }
+
+      if (imageUrl) {
+        await e.reply(segment.image(imageUrl),true);
+      } else {
+        logger.info(`[crystelf-ai] 图像生成响应 - 用户: ${e.user_id}, 响应: ${result.response}`);
+      }
+    } else {
+      logger.error(`[crystelf-ai] 图像生成/编辑失败 - 用户: ${e.user_id}, 错误: ${result.error}`);
+      await e.reply('图像生成失败了,待会儿再试试吧~', true);
+    }
+  } catch (error) {
+    logger.error(`[crystelf-ai] 处理图像消息失败 - 用户: ${e.user_id}, 错误: ${error.message}`);
+    const adapter = await YunzaiUtils.getAdapter(e);
+    await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
+    await e.reply('图像生成失败了,待会儿再试试吧~', true);
   }
 }
 
