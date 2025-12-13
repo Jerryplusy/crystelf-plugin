@@ -73,6 +73,29 @@
       "surprise"
     ]
   },
+  "?useReAct": "是否启用ReAct工具调用模式(需要模型支持function calling)",
+  "useReAct": false,
+  "?reactConfig": "ReAct配置",
+  "reactConfig": {
+    "?maxIterations": "最大思考迭代次数",
+    "maxIterations": 8,
+    "?timeout": "ReAct超时时间(毫秒)",
+    "timeout": 45000,
+    "?enableThinking": "是否显示思考过程",
+    "enableThinking": false,
+    "?toolTimeout": "单个工具执行超时时间(毫秒)",
+    "toolTimeout": 10000,
+    "?minConfidence": "最小信心度阈值(0-1)，低于此值会继续收集信息",
+    "minConfidence": 0.7,
+    "?contextMemoryLimit": "上下文记忆数量限制",
+    "contextMemoryLimit": 5,
+    "?enableContextHistory": "是否在迭代中包含聊天历史",
+    "enableContextHistory": true,
+    "?maxParallelTools": "单次最大并行工具调用数量",
+    "maxParallelTools": 5,
+    "?enableToolCombinations": "是否启用工具组合建议",
+    "enableToolCombinations": true
+  },
   "?imageConfig": "图像生成配置",
   "imageConfig": {
     "?enabled": "是否启用图像生成功能",
