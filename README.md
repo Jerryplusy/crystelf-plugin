@@ -118,7 +118,7 @@
 - [X] 获取引用消息  
 - [X] 适配多模态模型,查看图片等  
 - [ ] 支持联网搜索  
-- [ ] 支持生成图片  
+- [X] 支持生成图片  
 - [ ] 支持渲染数学公式  
 - [ ] 违禁词检测  
 - [ ] 使用toon代替json与模型交互  
@@ -301,6 +301,34 @@
     "fontSize": 14,
     "codeTheme": "github"
   },
+ 
+  "?imageConfig": "图像生成配置",
+  "imageConfig": {
+    "?enabled": "是否启用图像生成功能",
+    "enabled": true,
+    "?imageMode": "图像生成模式: 'openai'使用/v1/images/generations接口, 'chat'使用对话式生图模型(如gemini-3-pro-image-preview)",
+    "imageMode": "openai",
+    "?model": "图像生成模型名称(支持gemini-3-pro-image-preview等)",
+    "model": "gemini-3-pro-image-preview",
+    "?baseApi": "图像生成API基础地址(不加v1后面的)",
+    "baseApi": "https://api.uniapi.io",
+    "?apiKey": "图像生成API密钥",
+    "apiKey": "",
+    "?timeout": "图像生成超时时间(豪秒)",
+    "timeout": 60000,
+    "?maxRetries": "最大重试次数",
+    "maxRetries": 3,
+    "?quality": "生成图像质量(standard/high)",
+    "quality": "standard",
+    "?style": "图像风格(natural/vivid)",
+    "style": "natural",
+    "?size": "生成图像尺寸(1024x1024/1792x1024/...)",
+    "size": "1024x1024",
+    "?responseFormat": "响应格式(url/b64_json)",
+    "responseFormat": "url",
+    "?modalities": "模态类型(text/image)",
+    "modalities": ["text", "image"]
+  }
 }
 
 ```
