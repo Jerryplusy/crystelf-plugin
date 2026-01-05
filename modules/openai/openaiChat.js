@@ -62,9 +62,32 @@ class OpenaiChat {
         presence_penalty: 0.2,
         stream:false
       });
-
-      const aiResponse = completion.choices[0].message.content;
-      //logger.info(aiResponse);
+      let parsedCompletion = completion;
+      if (typeof completion === 'string') {
+        try {
+          parsedCompletion = JSON.parse(completion);
+        } catch (parseError) {
+          logger.error('[crystelf-ai] 响应JSON解析失败:', parseError);
+          return { success: false };
+        }
+      }
+      
+      //logger.info("[DEBUG] 解析后的响应:", JSON.stringify(parsedCompletion));
+      let aiResponse = null;
+      
+      if (parsedCompletion && parsedCompletion.choices && Array.isArray(parsedCompletion.choices) && parsedCompletion.choices.length > 0) {
+        const choice = parsedCompletion.choices[0];
+        if (choice && choice.message && choice.message.content) {
+          aiResponse = choice.message.content;
+        }
+      }
+      
+      if (!aiResponse) {
+        logger.error('[crystelf-ai] 无法从响应中提取AI回复内容:', parsedCompletion);
+        return { success: false };
+      }
+      
+      logger.info("[DEBUG] AI响应内容:", aiResponse);
       return {
         success: true,
         aiResponse: aiResponse,
