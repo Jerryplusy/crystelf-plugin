@@ -430,7 +430,7 @@ const guobaSchema = [
     field: 'ai.character',
     label: '表情包角色',
     component: 'Select',
-    bottomHelpMessage: '回复表情包时的角色(能力有限,目前仅支持一种角色)',
+    bottomHelpMessage: '回复表情包时的角色(能力有限,目前仅支持一种角色qwq)',
     componentProps: {
       options: [{ label: '真寻', value: 'zhenxun' }],
       placeholder: '请选择表情包角色',
