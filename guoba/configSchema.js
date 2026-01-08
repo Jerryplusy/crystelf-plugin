@@ -601,7 +601,7 @@ const guobaSchema = [
     field: 'ai.blockGroup',
     label: '禁用群聊',
     component: 'InputArray',
-    bottomHelpMessage: '黑名单群聊，插件不会在这些群聊中工作',
+    bottomHelpMessage: '黑名单群聊，AI不会在这些群聊中工作',
     componentProps: {
       placeholder: '请输入群号，按回车添加',
     },
@@ -776,7 +776,7 @@ const guobaSchema = [
     component: 'SOFT_GROUP_BEGIN',
   },
   {
-    field: 'profile.nickname',
+    field: 'profile.nickName',
     label: '机器人昵称',
     component: 'Input',
     bottomHelpMessage: '机器人的昵称',
