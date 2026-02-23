@@ -125,7 +125,7 @@ async function extractUserMessage(msg, nickname, e) {
       } else if (message.type === 'at') {
         at.push(message.qq);
       } else if (message.type === 'image') {
-        if (message.image) {
+        if (message.url) {
           originalMessages.push({
             type: 'image_url',
             image_url: {
