@@ -24,6 +24,8 @@
   "timeout": 30,
   "?maxSessions": "最大同时存在的sessions群聊数量",
   "maxSessions": 10,
+  "?maxSessionsPerGroup": "每个群最大同时存在的活跃会话数量",
+  "maxSessionsPerGroup": 3,
   "?chatHistory": "聊天上下文最大长度",
   "chatHistory": 10,
   "?maxMessageLength": "最大消息长度",
