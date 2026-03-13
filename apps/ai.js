@@ -1,17 +1,419 @@
 import ConfigControl from '../lib/config/configControl.js';
-import SessionManager from '../lib/ai/sessionManager.js';
-import KeywordMatcher from '../lib/ai/keywordMatcher.js';
-import AiCaller from '../lib/ai/aiCaller.js';
-import ResponseHandler from '../lib/ai/responseHandler.js';
-import MemorySystem from '../lib/ai/memorySystem.js';
-import Renderer from '../lib/ai/renderer.js';
-import Meme from '../lib/core/meme.js';
-import Group from '../lib/yunzai/group.js';
-import Message from '../lib/yunzai/message.js';
-import YunzaiUtils from '../lib/yunzai/utils.js';
-import { segment } from 'oicq';
-import tools from '../components/tool.js';
-const nickname = await ConfigControl.get('profile')?.nickName;
+import initDatabase from '../lib/ai-v2/db.js';
+import SessionManager from '../lib/ai-v2/session.js';
+import OpenAIChatClient from '../lib/ai-v2/openai-client.js';
+import HumanizeEngine from '../lib/ai-v2/humanize/index.js';
+import { MessageQueueManager } from '../lib/ai-v2/queue.js';
+import {
+  buildStoredMessageFromEvent,
+  extractContent,
+  getBotRole,
+  getGroupInfoData,
+  getQuotedContent,
+  isGroupAllowed,
+  isQuotingBot,
+  sendAIResponse,
+  sendEmoji,
+} from '../lib/ai-v2/message.js';
+import runChat from '../lib/ai-v2/chat-engine.js';
+
+const runtime = {
+  ready: false,
+  configHash: '',
+  config: null,
+  db: null,
+  sessionManager: null,
+  ai: null,
+  humanize: null,
+  queueManager: new MessageQueueManager(),
+  processing: new Set(),
+  cooldownUntil: new Map(),
+  cooldownTimers: new Map(),
+};
+
+function withDefaults(aiConfig = {}, profile = {}) {
+  const merged = {
+    apiUrl: 'https://api.openai.com/v1',
+    apiKey: '',
+    model: 'deepseek-ai/DeepSeek-V3.2-Exp',
+    workingModel: 'deepseek-ai/DeepSeek-V3.2-Exp',
+    multimodalWorkingModel: 'Qwen/Qwen2.5-VL-72B-Instruct',
+    isMultimodal: true,
+    maxContextTokens: 128,
+    temperature: 0.8,
+    historyCount: 100,
+    maxIterations: 8,
+    blacklistGroups: [],
+    whitelistGroups: [],
+    imageAnalysisBlacklistUsers: [],
+    maxSessions: 100,
+    enableGroupAdmin: true,
+    cooldownAfterReplyMs: 20_000,
+    dynamicDelay: {
+      enabled: true,
+      interactionWindowMs: 600_000,
+      baseDelayMs: 60_000,
+      maxDelayMs: 600_000,
+    },
+    persona:
+      'You are Jingling, a clever and emotionally aware group chat companion. You can be helpful when needed, but you should still sound like a real member of the group instead of a customer-support bot.',
+    personality: {
+      states: [
+        'Energetic and quick-witted, likes joining the flow of the conversation',
+        'Sleepy and a little lazy, replies become shorter and softer',
+        'Focused and serious, gives more solid and thoughtful answers',
+        'Playful and lightly teasing, but never mean-spirited',
+      ],
+      stateProbability: 0.15,
+    },
+    replyStyle: {
+      baseStyle: 'Speak like a real group member: natural, concise, a little expressive, and never list-like.',
+      multipleStyles: [
+        'Super lively, with a bit more excitement and energy',
+        'A little cheeky, but not passive-aggressive',
+        'Laid-back and low-energy, using fewer words',
+        'Feels like joining a running joke with a light tease',
+      ],
+      multipleProbability: 0.2,
+    },
+    memory: {
+      enabled: true,
+      maxIterations: 3,
+      timeoutMs: 15000,
+    },
+    topic: {
+      enabled: true,
+      messageThreshold: 50,
+      timeThresholdMs: 8 * 3600_000,
+      maxTopicsPerSession: 20,
+    },
+    planner: {
+      enabled: true,
+      idleThresholdMs: 30 * 60_000,
+      idleMessageCount: 100,
+      idleCheckBotIds: [],
+    },
+    typo: {
+      enabled: true,
+      errorRate: 0.03,
+      wordReplaceRate: 0.1,
+    },
+    emoji: {
+      enabled: false,
+      replyProbability: 0.3,
+      characters: ['zhenxun'],
+      availableEmotions: ['angry', 'bye', 'confused', 'default', 'good', 'goodmorning', 'goodnight', 'happy', 'sad', 'shy', 'sorry', 'surprise'],
+      useAISelection: false,
+    },
+    expression: {
+      enabled: true,
+      maxExpressions: 100,
+      sampleSize: 8,
+    },
+    nicknames: [],
+    ...aiConfig,
+  };
+
+  const nicknames = new Set([profile?.nickName, ...(Array.isArray(merged.nicknames) ? merged.nicknames : [])].filter(Boolean));
+  merged.nicknames = [...nicknames];
+  return merged;
+}
+
+async function ensureRuntime() {
+  const allConfig = ConfigControl.get() || {};
+  const config = withDefaults(allConfig.ai, allConfig.profile);
+  const configHash = JSON.stringify(config);
+
+  if (!runtime.ready) {
+    runtime.db = initDatabase();
+    runtime.sessionManager = new SessionManager(runtime.db, config.maxSessions);
+    runtime.ai = new OpenAIChatClient(config);
+    runtime.humanize = new HumanizeEngine(runtime.ai, config, runtime.db);
+    runtime.ready = true;
+    runtime.config = config;
+    runtime.configHash = configHash;
+    return runtime;
+  }
+
+  if (runtime.configHash !== configHash) {
+    runtime.config = config;
+    runtime.configHash = configHash;
+    runtime.ai.refreshConfig(config);
+    runtime.sessionManager.maxSize = config.maxSessions;
+    runtime.humanize = new HumanizeEngine(runtime.ai, config, runtime.db);
+  }
+
+  return runtime;
+}
+
+function detectResetCommand(e) {
+  return /^(#|\/)?重置(对话|会话)$/.test((e.msg || '').trim());
+}
+
+async function detectTrigger(e, config) {
+  const extracted = extractContent(e, config, config.nicknames);
+  const quotedBot = await isQuotingBot(e);
+
+  if (quotedBot) {
+    return {
+      shouldTrigger: true,
+      reason: 'comment',
+      extracted,
+      quotedBot,
+    };
+  }
+
+  if (extracted.isDirectAt || extracted.nicknameMatched) {
+    return {
+      shouldTrigger: true,
+      reason: 'reply',
+      extracted,
+      quotedBot: null,
+    };
+  }
+
+  return {
+    shouldTrigger: false,
+    reason: '',
+    extracted,
+    quotedBot: null,
+  };
+}
+
+async function buildTargetMessage(e, config, trigger) {
+  const quoted = await getQuotedContent(e);
+  const userName = e.sender?.card || e.sender?.nickname || String(e.user_id);
+  let content = trigger.extracted.text || '';
+
+  if (quoted?.content) {
+    content = `${content ? `${content}\n` : ''}[引用消息] ${quoted.senderName}: ${quoted.content}`;
+  }
+  if (!content && trigger.extracted.imageUrls.length > 0) {
+    content = '[用户发送了图片]';
+  }
+  if (!content) {
+    content = '你好';
+  }
+
+  return {
+    userName,
+    userId: e.user_id,
+    userRole: e.sender?.role || 'member',
+    userTitle: e.sender?.title,
+    content,
+    messageId: e.message_id,
+    timestamp: Date.now(),
+    imageUrls: trigger.extracted.imageUrls,
+    replyContext: trigger.reason,
+  };
+}
+
+function saveIncomingMessage(e, sessionId, storedText, runtimeState) {
+  if (!storedText) return;
+  runtimeState.db.saveMessage(buildStoredMessageFromEvent(e, sessionId, storedText));
+}
+
+async function getHumanizeContexts(runtimeState, sessionId, targetMessage, history) {
+  const memoryContext = await runtimeState.humanize.memoryRetrieval.retrieve(
+    sessionId,
+    targetMessage.content,
+    targetMessage.userName,
+    history,
+  );
+
+  return {
+    memoryContext: memoryContext || undefined,
+    topicContext: runtimeState.humanize.topicTracker.getTopicContext(sessionId) || undefined,
+    expressionContext: runtimeState.humanize.expressionLearner.getExpressionContext(sessionId) || undefined,
+  };
+}
+
+async function saveBotMessages(runtimeState, sessionId, e, messages) {
+  const now = Date.now();
+  const botNickname = runtimeState.config.nicknames[0] || '晶灵';
+  for (const message of messages) {
+    runtimeState.db.saveMessage({
+      sessionId,
+      role: 'assistant',
+      content: message,
+      userId: e.bot.uin,
+      userName: botNickname,
+      userRole: 'member',
+      groupId: e.group_id,
+      groupName: e.group_name || e.group?.info?.group_name,
+      timestamp: now,
+    });
+  }
+}
+
+async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
+  const sessionId = `group:${e.group_id}`;
+  if (runtimeState.processing.has(sessionId)) {
+    runtimeState.queueManager.enqueue(sessionId, e, 'review');
+    return;
+  }
+
+  runtimeState.processing.add(sessionId);
+  try {
+    runtimeState.sessionManager.getOrCreate(sessionId, 'group', e.group_id);
+    const history = runtimeState.db.getMessages(sessionId, runtimeState.config.historyCount);
+
+    const targetMessage = reviewPayload || (await buildTargetMessage(e, runtimeState.config, trigger));
+    const plannerResult = await runtimeState.humanize.actionPlanner.plan(
+      sessionId,
+      runtimeState.config.nicknames[0] || '晶灵',
+      history,
+      targetMessage.content,
+      trigger.reason === 'idle',
+    );
+
+    if (plannerResult.action === 'wait' || plannerResult.action === 'complete') {
+      return;
+    }
+
+    const botRole = await getBotRole(e);
+    const groupInfo = await getGroupInfoData(e);
+    const humanizeContexts = await getHumanizeContexts(runtimeState, sessionId, targetMessage, history);
+
+    const toolCtx = {
+      event: e,
+      sessionId,
+      groupId: e.group_id,
+      userId: e.user_id,
+      config: runtimeState.config,
+      db: runtimeState.db,
+      ai: runtimeState.ai,
+      botRole,
+      pendingImageUrls: targetMessage.imageUrls,
+    };
+
+    const result = await runChat(
+      runtimeState.ai,
+      toolCtx,
+      history,
+      targetMessage,
+      {
+        config: runtimeState.config,
+        groupName: groupInfo.groupName,
+        memberCount: groupInfo.memberCount,
+        botNickname: runtimeState.config.nicknames[0] || '晶灵',
+        botRole,
+        isGroup: true,
+        plannerThoughts: plannerResult.reason,
+        replyContext: {
+          type: reviewPayload ? 'review' : trigger.reason,
+        },
+        reviewMessages: reviewPayload?.reviewMessages,
+        ...humanizeContexts,
+      },
+      runtimeState.humanize,
+    );
+
+    if (result.messages.length > 0) {
+      await sendAIResponse(e, result.messages, runtimeState.humanize.typoGenerator);
+      await saveBotMessages(runtimeState, sessionId, e, result.messages);
+      if (result.emojiPath) {
+        await sendEmoji(e, result.emojiPath);
+      }
+      runtimeState.cooldownUntil.set(sessionId, Date.now() + runtimeState.config.cooldownAfterReplyMs);
+      scheduleCooldownFlush(sessionId, runtimeState.config.cooldownAfterReplyMs);
+    }
+  } catch (error) {
+    logger.error(`[crystelf-ai-v2] 处理群消息失败: ${error.message}`);
+  } finally {
+    runtimeState.processing.delete(sessionId);
+  }
+}
+
+async function flushQueuedMessages(sessionId) {
+  const runtimeState = await ensureRuntime();
+  if (runtimeState.processing.has(sessionId)) return;
+
+  const queue = runtimeState.queueManager.getQueue(sessionId);
+  if (!queue.length) return;
+
+  runtimeState.queueManager.clearQueue(sessionId);
+  const latest = queue[queue.length - 1].event;
+  const reviewMessages = queue.map(({ event }) => {
+    const extracted = extractContent(event, runtimeState.config, runtimeState.config.nicknames);
+    return {
+      content: extracted.text || '[无文本]',
+      userName: event.sender?.card || event.sender?.nickname || String(event.user_id),
+      userId: event.user_id,
+      messageId: event.message_id,
+    };
+  });
+
+  await processGroupMessage(
+    latest,
+    runtimeState,
+    { reason: 'review', extracted: extractContent(latest, runtimeState.config, runtimeState.config.nicknames) },
+    {
+      userName: reviewMessages.length > 1 ? '多人' : reviewMessages[0]?.userName || '未知用户',
+      userId: reviewMessages[0]?.userId || latest.user_id,
+      userRole: 'member',
+      content: reviewMessages.map((item) => `${item.userName}: ${item.content}`).join('\n'),
+      messageId: reviewMessages[reviewMessages.length - 1]?.messageId,
+      timestamp: Date.now(),
+      imageUrls: [],
+      reviewMessages: {
+        contents: reviewMessages.map((item) => item.content),
+        userNames: reviewMessages.map((item) => item.userName),
+        messageIds: reviewMessages.map((item) => item.messageId),
+      },
+    },
+  );
+}
+
+function scheduleCooldownFlush(sessionId, delayMs) {
+  if (runtime.cooldownTimers.has(sessionId)) {
+    clearTimeout(runtime.cooldownTimers.get(sessionId));
+  }
+
+  const timer = setTimeout(() => {
+    runtime.cooldownTimers.delete(sessionId);
+    flushQueuedMessages(sessionId).catch((error) => {
+      logger.error(`[crystelf-ai-v2] flush 队列失败: ${error.message}`);
+    });
+  }, delayMs);
+
+  runtime.cooldownTimers.set(sessionId, timer);
+}
+
+async function onGroupMessage(e) {
+  const runtimeState = await ensureRuntime();
+  const appConfig = ConfigControl.get('config') || {};
+  if (!appConfig.ai) return;
+  if (e.user_id === e.bot.uin) return;
+  if (!e.group_id) return;
+  if (!isGroupAllowed(e.group_id, runtimeState.config)) return;
+  if (!runtimeState.config.apiKey) return;
+
+  const trigger = await detectTrigger(e, runtimeState.config);
+  const sessionId = `group:${e.group_id}`;
+
+  const storedText = await buildTargetMessage(e, runtimeState.config, {
+    extracted: trigger.extracted,
+    reason: trigger.reason || 'observe',
+  }).then((item) => item.content).catch(() => '');
+  saveIncomingMessage(e, sessionId, storedText, runtimeState);
+
+  runtimeState.humanize.topicTracker.onMessage(sessionId).catch(() => null);
+  runtimeState.humanize.expressionLearner.onMessage(sessionId, buildStoredMessageFromEvent(e, sessionId, storedText)).catch(() => null);
+
+  if (!trigger.shouldTrigger || detectResetCommand(e)) {
+    return;
+  }
+
+  const cooldownUntil = runtimeState.cooldownUntil.get(sessionId) || 0;
+  if (Date.now() < cooldownUntil || runtimeState.processing.has(sessionId)) {
+    runtimeState.queueManager.enqueue(sessionId, e, 'review');
+    scheduleCooldownFlush(sessionId, Math.max(cooldownUntil - Date.now(), 1000));
+    return;
+  }
+
+  await processGroupMessage(e, runtimeState, trigger);
+}
 
 export class crystelfAI extends plugin {
   constructor() {
@@ -22,581 +424,24 @@ export class crystelfAI extends plugin {
       priority: -1111,
       rule: [
         {
-          reg: `^${nickname}([\\s\\S]*)?$`,
-          fnc: 'in',
-        },
-        {
           reg: '^(#|/)?重置(对话|会话)$',
           fnc: 'clearChatHistory',
         },
       ],
     });
-    this.isInitialized = false;
-  }
-  async init() {
-    try {
-      logger.info('[crystelf-ai] 开始初始化...');
-      SessionManager.init();
-      KeywordMatcher.init();
-      AiCaller.init();
-      MemorySystem.init();
-      Renderer.init();
-      this.isInitialized = true;
-      logger.info('[crystelf-ai] 初始化完成');
-    } catch (error) {
-      logger.error(`[crystelf-ai] 初始化失败: ${error.message}`);
-    }
-  }
-
-  async in(e) {
-    return await index(e);
   }
 
   async clearChatHistory(e) {
-    let session = SessionManager.createOrGetSession(e.group_id, e.user_id, e);
-    if (!session) return e.reply(`当前有群友正在和${nickname}聊天噢,请等待会话结束..`, true);
-    SessionManager.updateChatHistory(e.group_id, []);
-    SessionManager.deactivateSession(e.group_id, e.user_id);
-    return e.reply('成功重置聊天,聊天记录已经清除了..', true);
+    const runtimeState = await ensureRuntime();
+    const sessionId = `group:${e.group_id}`;
+    runtimeState.sessionManager.getOrCreate(sessionId, 'group', e.group_id);
+    runtimeState.db.deleteSessionMessages(sessionId);
+    runtimeState.db.deleteBotMessages(sessionId);
+    runtimeState.cooldownUntil.delete(sessionId);
+    return e.reply('当前群会话已重置，聊天上下文清空了。', true);
   }
 }
 
 Bot.on('message.group', async (e) => {
-  let flag = false;
-  if (e.message) {
-    e.message.forEach((message) => {
-      if (message.type === 'at' && message.qq == e.bot.uin) {
-        flag = true;
-      }
-    });
-  }
-  if (!flag) return;
-  return await index(e);
+  await onGroupMessage(e);
 });
-
-async function index(e) {
-  try {
-    const config = await ConfigControl.get();
-    const aiConfig = config?.ai;
-    if (!config?.config?.ai) {
-      return;
-    }
-    if (aiConfig?.blockGroup?.includes(e.group_id)) {
-      return;
-    }
-    if (aiConfig?.whiteGroup?.length > 0 && !aiConfig?.whiteGroup?.includes(e.group_id)) {
-      return;
-    }
-    if (e.user_id === e.bot.uin) {
-      return;
-    }
-    const messageData = await extractUserMessage(e.msg, nickname, e);
-    if (!messageData || !messageData.text || messageData.text.length === 0) {
-      return e.reply(segment.image(await Meme.getMeme(aiConfig.character, 'default')));
-    }
-    const result = await processMessage(messageData, e, aiConfig);
-    if (result && result.length > 0) {
-      await sendResponse(e, result);
-    }
-  } catch (error) {
-    logger.error(`[crystelf-ai] 处理消息失败: ${error.message}`);
-    const adapter = await YunzaiUtils.getAdapter(e);
-    await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
-    //return e.reply(segment.image(await Meme.getMeme(aiConfig.character, 'default')));
-  }
-}
-
-async function extractUserMessage(msg, nickname, e) {
-  if (e.message && msg && msg.trim()!=='' && msg !== '\n') {
-    let text = [];
-    let at = [];
-    const aiConfig = await ConfigControl.get('ai');
-    const maxMessageLength = aiConfig?.maxMessageLength || 100;
-    const originalMessages = [];
-    e.message.forEach((message) => {
-      logger.info(message);
-      if (message.type === 'text' && message.text !== '' && message.text !== '\n'){
-        let displayText = message.text;
-        if (message.text && message.text.length > maxMessageLength) {
-          const omittedChars = message.text.length - maxMessageLength;
-          displayText = message.text.substring(0, maxMessageLength) + `...(省略${omittedChars}字)`;
-        }
-        text.push(displayText);
-      } else if (message.type === 'at') {
-        at.push(message.qq);
-      } else if (message.type === 'image') {
-        if (message.url) {
-          originalMessages.push({
-            type: 'image_url',
-            image_url: {
-              url: message.url
-            }
-          });
-        }
-      }
-    });
-    
-    let returnMessage = '';
-    if (text.length > 0) {
-      text.forEach((message) => {
-        if(message === '') {
-        } else {
-          const tempMessage = `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]说:${message}\n`
-          returnMessage += tempMessage;
-          originalMessages.push({
-            type: 'text',
-            content: tempMessage
-          });
-        }
-      });
-    }
-    if(at.length == 1 && at[0] == e.bot.uin && text.length == 0){
-      return { text: [], originalMessages: originalMessages };
-    }
-    if (at.length > 0) {
-      for (const at1 of at) {
-        if (at1 == e.bot.uin) {
-          //returnMessage += `[${e.sender?.nickname},id:${e.user_id}]@(at)了你,你的id是${at}\n`;
-        } else {
-          const atNickname = await e.group.pickMember(at1).nickname || '一个人';
-          const tempMessage = `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]@(at)了${atNickname},id是${at1}\n`
-          returnMessage += tempMessage;
-          originalMessages.push({
-            type: 'text',
-            content: tempMessage
-          });
-        }
-      }
-    }
-    if(e.source || e.reply_id){
-      let reply;
-      if(e.getReply) reply = await e.getReply();
-      else {
-        const history = await e.group.getChatHistory(e.source.seq,1);
-        reply = history?.pop();
-      }
-      if(reply){
-        const msgArr = Array.isArray(reply) ? reply : reply.message || [];
-        msgArr.forEach((msg) => {
-          if(msg.type === 'text'){
-            const tempMessage = `[${e.sender?.nickname}]引用了[被引用消息:${reply.user_id == e.bot.uin ? '你' : reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一段文本:${msg.text}\n`
-            returnMessage += tempMessage;
-            originalMessages.push({
-              type: 'text',
-              content: tempMessage
-            });
-          }
-          if(msg.type === 'image'){
-            returnMessage += `[${e.sender?.nickname}]引用了[被引用消息:${reply.user_id == e.bot.uin ? '你' : reply.sender?.nickname},id:${reply.user_id},seq:${reply.message_id}]发的一张图片(你可能暂时无法查看)\n`;
-            originalMessages.push({
-              type: 'image_url',
-              image_url: {
-                url: msg.url
-              }
-            });
-          }
-        })
-      }
-    }
-    const imgUrls = await YunzaiUtils.getImages(e, 1, true);
-    if (imgUrls) {
-      returnMessage += `[${e.sender?.nickname},id:${e.user_id},seq:${e.message_id}]发送了一张图片(你可能暂时无法查看)\n`;
-    }
-    return { text: returnMessage, originalMessages: originalMessages };
-  }
-  logger.warn('[crystelf-ai] 字符串匹配失败');
-  return { text: [], originalMessages: [] };
-}
-
-/**
- * 处理用户消息
- * @param userMessage
- * @param e
- * @param aiConfig
- * @returns {Promise<Array|null>}
- */
-async function processMessage(userMessage, e, aiConfig) {
-  const mode = aiConfig?.mode || 'mix';
-  logger.info(`[crystelf-ai] 群${e.group_id} 用户${e.user_id}使用${mode}进行回复..`);
-  switch (mode) {
-    case 'keyword':
-      return await handleKeywordMode(userMessage, e);
-    case 'ai':
-      return await handleAiMode(userMessage, e, aiConfig);
-    case 'mix':
-      return await handleMixMode(userMessage, e, aiConfig);
-    default:
-      logger.warn(`[crystelf-ai] 未知匹配模式: ${mode},将使用混合模式输出`);
-      return await handleMixMode(userMessage, e, aiConfig);
-  }
-}
-
-/**
- * 关键词模式
- * @param messageData
- * @param e
- * @returns {Promise<[{type: string, data: string}]>}
- */
-async function handleKeywordMode(messageData, e) {
-  const matchResult = await KeywordMatcher.matchKeywords(e.msg, 'ai');
-
-  if (matchResult && matchResult.matched) {
-    return [
-      {
-        type: 'message',
-        data: matchResult.text,
-        at: -1,
-        quote: -1,
-        recall: false,
-      },
-    ];
-  }
-  logger.warn('[crystelf-ai] 关键词回复模式未查询到输出,将回复表情包');
-  return [
-    {
-      type: 'meme',
-      data: 'default',
-    },
-  ];
-}
-
-async function handleAiMode(messageData, e, aiConfig) {
-  return await callAiForResponse(messageData, e, aiConfig);
-}
-
-async function handleMixMode(messageData, e, aiConfig) {
-  const isTooLong = await KeywordMatcher.isMessageTooLong(e.msg);
-
-  if (isTooLong) {
-    //消息太长,使用AI回复
-    logger.info('[crystelf-ai] 消息过长,使用ai回复');
-    return await callAiForResponse(messageData, e, aiConfig);
-  } else {
-    const matchResult = await KeywordMatcher.matchKeywords(e.msg, 'ai');
-    if (matchResult && matchResult.matched) {
-      const session = SessionManager.createOrGetSession(e.group_id, e.user_id, e);
-      const historyLen = aiConfig.chatHistory;
-      const chatHistory = session.chatHistory.slice(-historyLen | -10);
-      const res = [
-        {
-          type: 'message',
-          data: matchResult.text,
-          at: -1,
-          quote: -1,
-          recall: false,
-        },
-      ];
-      let resMessage = {
-        type: 'message',
-        data: matchResult.text,
-        at: -1,
-        quote: -1,
-        recall: false,
-      };
-      const newChatHistory = [
-        ...chatHistory,
-        { role: 'user', content: messageData.text },
-        { role: 'assistant', content: JSON.stringify(resMessage) },
-      ];
-      SessionManager.updateChatHistory(e.group_id, newChatHistory);
-      SessionManager.deactivateSession(e.group_id, e.user_id);
-
-      return res;
-    } else {
-      logger.info('[crystelf-ai] 关键词匹配失败,使用ai回复');
-      //关键词匹配失败,使用AI回复
-      return await callAiForResponse(messageData, e, aiConfig);
-    }
-  }
-}
-
-async function callAiForResponse(messageData, e, aiConfig) {
-  try {
-    //创建session
-    const session = SessionManager.createOrGetSession(e.group_id, e.user_id, e);
-    if (!session) {
-      logger.info(
-        `[crystelf-ai] 群${e.group_id} , 用户${e.user_id}无法创建session,请检查是否聊天频繁`
-      );
-      const adapter = await YunzaiUtils.getAdapter(e);
-      await Message.emojiLike(e, e.message_id, 128166, e.group_id, adapter);
-      return null;
-    }
-    const adapter = await YunzaiUtils.getAdapter(e);
-    await Message.emojiLike(e, e.message_id, 128064, e.group_id, adapter); //👀
-    //搜索相关记忆
-    const memories = await MemorySystem.searchMemories(e.user_id, e.msg || '', 5);
-    logger.info(`[crystelf-ai] ${memories}`);
-    //构建聊天历史
-    const historyLen = aiConfig.chatHistory;
-    const chatHistory = session.chatHistory.slice(-historyLen | -10);
-    
-    // 根据多模态开关决定调用方式
-    const aiResult = await AiCaller.callAi(messageData.text, chatHistory, memories, e, messageData.originalMessages);
-    
-    if (!aiResult.success) {
-      logger.error(`[crystelf-ai] AI调用失败: ${aiResult.error}`);
-      SessionManager.deactivateSession(e.group_id, e.user_id);
-      return [
-        {
-          type: 'meme',
-          data: 'default',
-        },
-      ];
-    }
-    //处理响应
-    const processedResponse = await ResponseHandler.processResponse(
-      aiResult.response,
-      messageData.text,
-      e.group_id,
-      e.user_id
-    );
-    //更新session
-    let userMessageContent, assistantMessageContent;
-    const usedMultimodal = aiConfig.multimodalEnabled && 
-      (!aiConfig.smartMultimodal || messageData.originalMessages?.some(msg => msg.type === 'image_url'));
-    
-    if (usedMultimodal && messageData.originalMessages) {
-      userMessageContent = messageData.originalMessages.map(msg => {
-        if (msg.type === 'text') return msg.content;
-        if (msg.type === 'image_url') return `[图片消息]`;
-      }).filter(Boolean).join('');
-    } else {
-      userMessageContent = messageData.text;
-    }
-    assistantMessageContent = aiResult.response;
-    const newChatHistory = [
-      ...chatHistory,
-      { role: 'user', content: userMessageContent },
-      { role: 'assistant', content: assistantMessageContent },
-    ];
-    SessionManager.updateChatHistory(e.group_id, newChatHistory);
-    SessionManager.deactivateSession(e.group_id, e.user_id);
-    return processedResponse;
-  } catch (error) {
-    const adapter = await YunzaiUtils.getAdapter(e);
-    await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
-    logger.error(`[crystelf-ai] AI调用失败: ${error.message}`);
-    SessionManager.deactivateSession(e.group_id, e.user_id);
-    return [];
-  }
-}
-
-/**
- * 发送消息
- * @param e
- * @param messages 消息数组
- * @returns {Promise<void>}
- */
-async function sendResponse(e, messages) {
-  try {
-    const adapter = await YunzaiUtils.getAdapter(e);
-    for (const message of messages) {
-      switch (message.type) {
-        case 'message':
-          await Message.sendGroupMessage(e,e.group_id,message.data,message.at,message.quote,adapter);
-          break;
-
-        case 'code':
-          await handleCodeMessage(e, message);
-          break;
-
-        case 'markdown':
-          await handleMarkdownMessage(e, message);
-          break;
-
-        case 'meme':
-          await handleMemeMessage(e, message);
-          break;
-
-        case 'at':
-          if(message.id != e.bot.uin)e.reply(segment.at(message.id));
-          break;
-
-        case 'poke':
-          await handlePokeMessage(e, message);
-          break;
-
-        case 'image':
-          await handleImageMessage(e, message);
-          break;
-
-        default:
-          logger.warn(`[crystelf-ai] 不支持的消息类型: ${message.type}`);
-      }
-      await tools.sleep(40);
-    }
-  } catch (error) {
-    const adapter = await YunzaiUtils.getAdapter(e);
-    await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
-    logger.error(`[crystelf-ai] 发送回复失败: ${error}`);
-  }
-}
-
-async function handleCodeMessage(e, message) {
-  try {
-    //渲染代码为图片
-    logger.info(message);
-    logger.info(message.language);
-    const imagePath = await Renderer.renderCode(message.data, message.language);
-    if (imagePath) {
-      await e.reply(segment.image(imagePath));
-    } else {
-      await e.reply('渲染代码失败了,待会儿再试试吧..', true);
-    }
-  } catch (error) {
-    logger.error(`[crystelf-ai] 处理代码消息失败: ${error.message}`);
-    const adapter = await YunzaiUtils.getAdapter(e);
-    await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
-    await e.reply('渲染代码失败了,待会儿再试试吧..', true);
-  }
-}
-
-async function handleMarkdownMessage(e, message) {
-  try {
-    //渲染Markdown为图片
-    const imagePath = await Renderer.renderMarkdown(message.data);
-    if (imagePath) {
-      await e.reply(segment.image(imagePath));
-    } else {
-      //渲染失败 TODO 构造转发消息发送,避免刷屏
-      await e.reply('渲染markdown失败了,待会儿再试试吧..', true);
-    }
-  } catch (error) {
-    const adapter = await YunzaiUtils.getAdapter(e);
-    await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
-    logger.error(`[crystelf-ai] 处理Markdown消息失败: ${error.message}`);
-    await e.reply('渲染markdown失败了,待会儿再试试吧..', true);
-  }
-}
-
-async function handleMemeMessage(e, message) {
-  try {
-    const config = await ConfigControl.get('ai');
-    const memeConfig = config?.memeConfig || {};
-    const availableEmotions = memeConfig.availableEmotions || ['happy', 'sad', 'angry', 'confused'];
-    //情绪是否有效
-    const emotion = availableEmotions.includes(message.data) ? message.data : 'default';
-    const character = memeConfig.character || 'default';
-    const memeUrl = await Meme.getMeme(character, emotion);
-    await e.reply(segment.image(memeUrl));
-  } catch (error) {
-    logger.error(`[crystelf-ai] 处理表情消息失败: ${error.message}`);
-    const adapter = await YunzaiUtils.getAdapter(e);
-    await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
-    //e.reply(segment.image(await Meme.getMeme(aiConfig.character, 'default')));
-  }
-}
-
-async function handlePokeMessage(e, message) {
-  try {
-    if(message.id != e.bot.uin){
-    await Group.groupPoke(e, message.id, e.group_id);
-    }
-  } catch (error) {
-    logger.error(`[crystelf-ai] 戳一戳失败: ${error.message}`);
-  }
-}
-
-async function handleImageMessage(e, message) {
-  try {
-    const { default: userConfigManager } = await import('../lib/ai/userConfigManager.js');
-    const userConfig = await userConfigManager.getUserConfig(String(e.user_id));
-    const imageConfig = userConfig.imageConfig;
-    
-    if (!imageConfig?.enabled) {
-      logger.warn('[crystelf-ai] 图像生成功能未启用');
-      return;
-    }
-
-    let sourceImageArr = null;
-      // 从用户消息中提取图片URL
-      const imageMessages = [];
-      e.message.forEach((message) => {
-        if (message.type === 'image') {
-          if (message.image) {
-            imageMessages.push(message.url);
-          }
-        }
-      });
-      if(e.source || e.reply_id){
-        let reply;
-        if(e.getReply) reply = await e.getReply();
-        else {
-          const history = await e.group.getChatHistory(e.source.seq,1);
-          reply = history?.pop();
-        }
-        if(reply){
-          const msgArr = Array.isArray(reply) ? reply : reply.message || [];
-          msgArr.forEach((msg) => {
-            if(msg.type === 'image'){
-              imageMessages.push(msg.url);
-            }
-          })
-        }
-      }
-      if (imageMessages.length > 0) {
-        sourceImageArr = imageMessages;
-      } else {
-        logger.warn('[crystelf-ai] 未找到用户发送的图片,将使用生成模式..');
-      }
-    logger.info(`[crystelf-ai] 用户使用图像配置 - 模型: ${imageConfig.model || '默认'}, API: ${imageConfig.baseApi || '默认'}`);
-    const imageMessage = {
-      data: message.data,
-      sourceImageArr: sourceImageArr
-    };
-
-    const { default: aiCaller } = await import('../lib/ai/aiCaller.js');
-    const result = await aiCaller.callAi(
-      '',
-      [],
-      [],
-      e,
-      [],
-      [imageMessage]
-    );
-
-    if (result.success) {
-      let imageUrl = null;
-      let description = message.data;
-      
-      try {
-        const responseData = JSON.parse(result.rawResponse);
-        if (responseData && responseData.length > 0 && responseData[0].type === 'image') {
-          imageUrl = responseData[0].url;
-          description = responseData[0].description || message.data;
-        }
-      } catch (parseError) {
-        logger.warn(`[crystelf-ai] 解析图像响应失败,响应文本: ${parseError.message}`);
-        await e.reply('图像生成失败了,待会儿再试试吧~', true);
-        return;
-      }
-
-      if (imageUrl) {
-        await e.reply(segment.image(imageUrl),true);
-      } else {
-        logger.info(`[crystelf-ai] 图像生成响应 - 用户: ${e.user_id}, 响应: ${result.response}`);
-      }
-    } else {
-      logger.error(`[crystelf-ai] 图像生成/编辑失败 - 用户: ${e.user_id}, 错误: ${result.error}`);
-      await e.reply('图像生成失败了,待会儿再试试吧~', true);
-    }
-  } catch (error) {
-    logger.error(`[crystelf-ai] 处理图像消息失败 - 用户: ${e.user_id}, 错误: ${error.message}`);
-    const adapter = await YunzaiUtils.getAdapter(e);
-    await Message.emojiLike(e, e.message_id, 10060, e.group_id, adapter);
-    await e.reply('图像生成失败了,待会儿再试试吧~', true);
-  }
-}
-
-//定期清理过期sessions
-setInterval(
-  async () => {
-    try {
-      SessionManager.cleanTimeoutSessions();
-    } catch (error) {
-      logger.error(`[crystelf-ai] 清理过期sessions失败: ${error.message}`);
-    }
-  },
-  5 * 60 * 1000
-); //5分钟清理一次
