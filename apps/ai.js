@@ -362,6 +362,7 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
         groupName: groupInfo.groupName,
         memberCount: groupInfo.memberCount,
         botNickname: runtimeState.config.nicknames[0] || '晶灵',
+        botQQ: e.bot?.uin,
         botRole,
         isGroup: true,
         plannerThoughts: plannerResult.reason,
@@ -382,7 +383,7 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
       await saveBotMessages(runtimeState, sessionId, e, result.messages);
       if (result.emojiPath) {
         logger.info(`[crystelf-ai-v2] sending emoji session=${sessionId}`);
-        await sendEmoji(e, result.emojiPath);
+        await sendEmoji(e, result.emojiPath, result.emojiQuoteId);
       }
       runtimeState.cooldownUntil.set(
         sessionId,
