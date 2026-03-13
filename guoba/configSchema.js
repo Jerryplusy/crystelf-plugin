@@ -371,6 +371,19 @@ const guobaSchema = [
     },
   },
   {
+    field: 'ai.maxSessionsPerGroup',
+    label: '每群最大会话数',
+    component: 'InputNumber',
+    bottomHelpMessage: '每个群最多同时存在的活跃会话数量',
+    componentProps: {
+      min: 1,
+      max: 10,
+      step: 1,
+      default: 3,
+      placeholder: '请输入每群最大会话数',
+    },
+  },
+  {
     field: 'ai.chatHistory',
     label: '聊天历史长度',
     component: 'InputNumber',
