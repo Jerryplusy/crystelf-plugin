@@ -362,6 +362,7 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
         groupName: groupInfo.groupName,
         memberCount: groupInfo.memberCount,
         botNickname: runtimeState.config.nicknames[0] || '晶灵',
+        botQQ: e.bot?.uin,
         botRole,
         isGroup: true,
         plannerThoughts: plannerResult.reason,
