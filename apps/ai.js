@@ -375,12 +375,14 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
       runtimeState.humanize
     );
 
-    if (result.messages.length > 0) {
+    if (result.messages.length > 0 || result.emojiPath) {
       logger.info(
         `[crystelf-ai-v2] sending ${result.messages.length} message(s) session=${sessionId}`
       );
-      await sendAIResponse(e, result.messages, runtimeState.humanize.typoGenerator);
-      await saveBotMessages(runtimeState, sessionId, e, result.messages);
+      if (result.messages.length > 0) {
+        await sendAIResponse(e, result.messages, runtimeState.humanize.typoGenerator);
+        await saveBotMessages(runtimeState, sessionId, e, result.messages);
+      }
       if (result.emojiPath) {
         logger.info(`[crystelf-ai-v2] sending emoji session=${sessionId}`);
         await sendEmoji(e, result.emojiPath, result.emojiQuoteId);
