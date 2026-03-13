@@ -16,6 +16,7 @@ import {
   sendEmoji,
 } from '../lib/ai-v2/message.js';
 import runChat from '../lib/ai-v2/chat-engine.js';
+import { processImage } from '../lib/ai-v2/image-analyzer.js';
 
 const runtime = {
   ready: false,
@@ -168,8 +169,8 @@ function detectResetCommand(e) {
   return /^([#\/])?重置(对话|会话)$/.test((e.msg || '').trim());
 }
 
-async function detectTrigger(e, config) {
-  const extracted = extractContent(e, config, config.nicknames);
+async function detectTrigger(e, config, db) {
+  const extracted = await extractContent(e, config, config.nicknames, db);
   const quotedBot = await isQuotingBot(e);
 
   if (quotedBot) {
@@ -210,8 +211,8 @@ async function detectTrigger(e, config) {
   };
 }
 
-async function buildTargetMessage(e, config, trigger) {
-  const quoted = await getQuotedContent(e);
+async function buildTargetMessage(e, config, trigger, db) {
+  const quoted = await getQuotedContent(e, db);
   const userName = e.sender?.card || e.sender?.nickname || String(e.user_id);
   let content = trigger.extracted.text || '';
 
@@ -219,7 +220,7 @@ async function buildTargetMessage(e, config, trigger) {
     content = `${content ? `${content}\n` : ''}[引用消息] ${quoted.senderName}: ${quoted.content}`;
   }
   if (!content && trigger.extracted.imageUrls.length > 0) {
-    content = '[用户发送了图片]';
+    content = '[image]';
   }
   if (!content) {
     content = '你好';
@@ -294,7 +295,7 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
     const history = runtimeState.db.getMessages(sessionId, runtimeState.config.historyCount);
 
     const targetMessage =
-      reviewPayload || (await buildTargetMessage(e, runtimeState.config, trigger));
+      reviewPayload || (await buildTargetMessage(e, runtimeState.config, trigger, runtimeState.db));
     const triggerType = reviewPayload ? 'review' : trigger.reason;
     let plannerResult = {
       action: 'reply',
@@ -421,22 +422,29 @@ async function flushQueuedMessages(sessionId) {
 
   runtimeState.queueManager.clearQueue(sessionId);
   const latest = queue[queue.length - 1].event;
-  const reviewMessages = queue.map(({ event }) => {
-    const extracted = extractContent(event, runtimeState.config, runtimeState.config.nicknames);
-    return {
-      content: extracted.text || '[无文本]',
-      userName: event.sender?.card || event.sender?.nickname || String(event.user_id),
-      userId: event.user_id,
-      messageId: event.message_id,
-    };
-  });
+  const reviewMessages = await Promise.all(
+    queue.map(async ({ event }) => {
+      const extracted = await extractContent(
+        event,
+        runtimeState.config,
+        runtimeState.config.nicknames,
+        runtimeState.db
+      );
+      return {
+        content: extracted.text || '[无文本]',
+        userName: event.sender?.card || event.sender?.nickname || String(event.user_id),
+        userId: event.user_id,
+        messageId: event.message_id,
+      };
+    })
+  );
 
   await processGroupMessage(
     latest,
     runtimeState,
     {
       reason: 'review',
-      extracted: extractContent(latest, runtimeState.config, runtimeState.config.nicknames),
+      extracted: await extractContent(latest, runtimeState.config, runtimeState.config.nicknames, runtimeState.db),
     },
     {
       userName: reviewMessages.length > 1 ? '多人' : reviewMessages[0]?.userName || '未知用户',
@@ -494,16 +502,27 @@ async function onGroupMessage(e) {
     return;
   }
 
-  const trigger = await detectTrigger(e, runtimeState.config);
+  const trigger = await detectTrigger(e, runtimeState.config, runtimeState.db);
   const sessionId = `group:${e.group_id}`;
 
   const storedText = await buildTargetMessage(e, runtimeState.config, {
     extracted: trigger.extracted,
     reason: trigger.reason || 'observe',
-  })
+  }, runtimeState.db)
     .then((item) => item.content)
     .catch(() => '');
   saveIncomingMessage(e, sessionId, storedText, runtimeState);
+
+  if (runtimeState.config.isMultimodal && !(runtimeState.config.imageAnalysisBlacklistUsers || []).includes(e.user_id)) {
+    for (const seg of Array.isArray(e.message) ? e.message : []) {
+      const imageUrl = seg?.url || seg?.data?.url;
+      if (seg?.type === 'image' && imageUrl) {
+        processImage(runtimeState.ai, imageUrl, runtimeState.config.multimodalWorkingModel, runtimeState.db).catch((error) => {
+          logger.warn(`[crystelf-ai-v2] auto image processing failed: ${error.message}`);
+        });
+      }
+    }
+  }
 
   runtimeState.humanize.topicTracker.onMessage(sessionId).catch(() => null);
   runtimeState.humanize.expressionLearner
