@@ -172,10 +172,6 @@ async function detectTrigger(e, config) {
   const extracted = extractContent(e, config, config.nicknames);
   const quotedBot = await isQuotingBot(e);
 
-  logger.info(
-    `[crystelf-ai-v2] trigger check group=${e.group_id} user=${e.user_id} text=${JSON.stringify(extracted.text)} directAt=${Boolean(extracted.isDirectAt)} nicknameMatched=${Boolean(extracted.nicknameMatched)} images=${extracted.imageUrls?.length || 0}`
-  );
-
   if (quotedBot) {
     logger.info(`[crystelf-ai-v2] trigger matched quoted bot message in group=${e.group_id}`);
     return {
@@ -206,7 +202,6 @@ async function detectTrigger(e, config) {
     };
   }
 
-  logger.info(`[crystelf-ai-v2] trigger miss in group=${e.group_id} user=${e.user_id}`);
   return {
     shouldTrigger: false,
     reason: '',
@@ -475,9 +470,6 @@ function scheduleCooldownFlush(sessionId, delayMs) {
 async function onGroupMessage(e) {
   const runtimeState = await ensureRuntime();
   const appConfig = ConfigControl.get('config') || {};
-  logger.info(
-    `[crystelf-ai-v2] onGroupMessage group=${e.group_id} user=${e.user_id} raw=${JSON.stringify(e.raw_message || '')}`
-  );
   if (!appConfig.ai) {
     logger.warn('[crystelf-ai-v2] skip because app config ai is disabled');
     return;
@@ -516,7 +508,6 @@ async function onGroupMessage(e) {
     .catch(() => null);
 
   if (!trigger.shouldTrigger) {
-    logger.info(`[crystelf-ai-v2] skip because message is not a trigger session=${sessionId}`);
     return;
   }
 
@@ -568,8 +559,5 @@ export class crystelfAI extends plugin {
 }
 
 Bot.on('message.group', async (e) => {
-  logger.info(
-    `[crystelf-ai-v2] Bot event message.group received group=${e.group_id} user=${e.user_id}`
-  );
   await onGroupMessage(e);
 });
