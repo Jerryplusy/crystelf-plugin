@@ -312,6 +312,7 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
         {
           isIdleCheck: trigger.reason === 'idle',
           triggerType,
+          rawTriggerMessage: trigger.extracted?.originalText || targetMessage.content,
         }
       );
 
@@ -444,7 +445,12 @@ async function flushQueuedMessages(sessionId) {
     runtimeState,
     {
       reason: 'review',
-      extracted: await extractContent(latest, runtimeState.config, runtimeState.config.nicknames, runtimeState.db),
+      extracted: await extractContent(
+        latest,
+        runtimeState.config,
+        runtimeState.config.nicknames,
+        runtimeState.db
+      ),
     },
     {
       userName: reviewMessages.length > 1 ? '多人' : reviewMessages[0]?.userName || '未知用户',
@@ -482,42 +488,50 @@ async function onGroupMessage(e) {
   const runtimeState = await ensureRuntime();
   const appConfig = ConfigControl.get('config') || {};
   if (!appConfig.ai) {
-    logger.warn('[crystelf-ai-v2] skip because app config ai is disabled');
     return;
   }
   if (e.user_id === e.bot.uin) {
-    logger.info('[crystelf-ai-v2] skip self message');
     return;
   }
   if (!e.group_id) {
-    logger.warn('[crystelf-ai-v2] skip because group_id is missing');
     return;
   }
   if (!isGroupAllowed(e.group_id, runtimeState.config)) {
-    logger.info(`[crystelf-ai-v2] skip because group=${e.group_id} is not allowed`);
     return;
   }
   if (!runtimeState.config.apiKey) {
-    logger.warn('[crystelf-ai-v2] skip because apiKey is empty');
     return;
   }
 
   const trigger = await detectTrigger(e, runtimeState.config, runtimeState.db);
   const sessionId = `group:${e.group_id}`;
 
-  const storedText = await buildTargetMessage(e, runtimeState.config, {
-    extracted: trigger.extracted,
-    reason: trigger.reason || 'observe',
-  }, runtimeState.db)
+  const storedText = await buildTargetMessage(
+    e,
+    runtimeState.config,
+    {
+      extracted: trigger.extracted,
+      reason: trigger.reason || 'observe',
+    },
+    runtimeState.db
+  )
     .then((item) => item.content)
     .catch(() => '');
   saveIncomingMessage(e, sessionId, storedText, runtimeState);
 
-  if (runtimeState.config.isMultimodal && !(runtimeState.config.imageAnalysisBlacklistUsers || []).includes(e.user_id)) {
+  if (
+    runtimeState.config.isMultimodal &&
+    !(runtimeState.config.imageAnalysisBlacklistUsers || []).includes(e.user_id)
+  ) {
     for (const seg of Array.isArray(e.message) ? e.message : []) {
       const imageUrl = seg?.url || seg?.data?.url;
       if (seg?.type === 'image' && imageUrl) {
-        processImage(runtimeState.ai, imageUrl, runtimeState.config.multimodalWorkingModel, runtimeState.db).catch((error) => {
+        processImage(
+          runtimeState.ai,
+          imageUrl,
+          runtimeState.config.multimodalWorkingModel,
+          runtimeState.db
+        ).catch((error) => {
           logger.warn(`[crystelf-ai-v2] auto image processing failed: ${error.message}`);
         });
       }
