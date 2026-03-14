@@ -36,7 +36,7 @@
   "enableGroupAdmin": true,
   "?cooldownAfterReplyMs": "每次回复后的冷却时间，冷却期内的新触发会合并为 review 回复",
   "cooldownAfterReplyMs": 20000,
-  "?dynamicDelay": "动态延迟配置（当前主要保留配置结构）",
+  "?dynamicDelay": "动态延迟配置（直接@时会根据近期互动人数延迟并合并回复）",
   "dynamicDelay": {
     "?enabled": "是否启用动态延迟",
     "enabled": true,
@@ -97,11 +97,11 @@
   "planner": {
     "?enabled": "是否启用 planner",
     "enabled": true,
-    "?idleThresholdMs": "空闲插话阈值（保留字段）",
+    "?idleThresholdMs": "距离最后一次群内发言超过多久后，才进入空闲插话候选",
     "idleThresholdMs": 1800000,
-    "?idleMessageCount": "空闲插话保底消息数（保留字段）",
+    "?idleMessageCount": "自上次 Bot 发言后，至少累计多少条消息才允许空闲插话",
     "idleMessageCount": 100,
-    "?idleCheckBotIds": "空闲检查 bot 列表（保留字段）",
+    "?idleCheckBotIds": "限制哪些 Bot 参与空闲插话；留空表示当前群中所有在线 Bot 都可参与",
     "idleCheckBotIds": []
   },
   "?typo": "错别字模拟配置",
@@ -117,28 +117,30 @@
   "emoji": {
     "?enabled": "是否启用表情包能力",
     "enabled": false,
-    "?replyProbability": "允许提示词出现 meme 指令的概率",
+    "?replyProbability": "每次构建提示词时，有多大概率告诉 AI 可以发表情包",
     "replyProbability": 0.3,
     "?characters": "可用角色列表",
     "characters": [
       "zhenxun"
     ],
-    "?availableEmotions": "可用情绪列表",
+    "?availableEmotions": "限制 AI 允许使用的表情情绪；留空则按目录自动判断",
     "availableEmotions": [
-      "angry",
-      "bye",
-      "confused",
-      "default",
-      "good",
-      "goodmorning",
-      "goodnight",
       "happy",
       "sad",
+      "angry",
+      "surprised",
+      "confused",
+      "excited",
+      "tired",
       "shy",
-      "sorry",
-      "surprise"
+      "proud",
+      "default",
+      "funny",
+      "cute",
+      "love",
+      "neutral"
     ],
-    "?useAISelection": "是否使用 AI 进行表情包二次筛选（当前保留字段）",
+    "?useAISelection": "是否使用工作模型对候选表情包进行二次筛选",
     "useAISelection": false
   },
   "?expression": "表达学习配置",

@@ -36,6 +36,27 @@ function flattenObject(obj, prefix = '') {
   return result;
 }
 
+const NUMBER_ARRAY_FIELDS = new Set([
+  'ai.blacklistGroups',
+  'ai.whitelistGroups',
+  'ai.imageAnalysisBlacklistUsers',
+  'ai.planner.idleCheckBotIds',
+]);
+
+function normalizeFieldValue(fieldPath, value) {
+  if (!NUMBER_ARRAY_FIELDS.has(fieldPath)) {
+    return value;
+  }
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => Number.parseInt(item, 10))
+    .filter((item) => Number.isFinite(item));
+}
+
 /**
  * 获取当前配置
  * @returns {Promise<Object>} 当前配置对象
@@ -80,7 +101,7 @@ export async function setConfigData(data, { Result }) {
 
       // 使用lodash.set设置嵌套属性
       const keyPath = parts.slice(1).join('.');
-      lodash.set(configUpdates[configName], keyPath, value);
+      lodash.set(configUpdates[configName], keyPath, normalizeFieldValue(fieldPath, value));
     }
 
     // 只更新实际有变化的配置文件

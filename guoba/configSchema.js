@@ -1,3 +1,131 @@
+import fs from 'fs';
+import path from 'path';
+
+const SUPPORTED_EMOTION_OPTIONS = [
+  'happy',
+  'sad',
+  'angry',
+  'surprised',
+  'confused',
+  'excited',
+  'tired',
+  'shy',
+  'proud',
+  'default',
+  'funny',
+  'cute',
+  'love',
+  'neutral',
+].map((value) => ({ label: value, value }));
+
+function normalizeNumber(value) {
+  const num = Number.parseInt(value, 10);
+  return Number.isFinite(num) ? num : null;
+}
+
+function dedupeByValue(options = []) {
+  const map = new Map();
+  for (const item of options) {
+    if (!item || item.value === undefined || item.value === null) continue;
+    const key = String(item.value);
+    if (!map.has(key)) {
+      map.set(key, item);
+    }
+  }
+  return [...map.values()];
+}
+
+function getBotInstances() {
+  const botRoot = globalThis.Bot;
+  const uins = Array.isArray(botRoot?.uin) ? botRoot.uin : [];
+  return uins
+    .map((uin) => ({ uin, bot: botRoot?.[uin] }))
+    .filter((item) => item.bot);
+}
+
+function getGroupOptions() {
+  const options = [];
+  for (const { bot } of getBotInstances()) {
+    const groupMap = bot?.gl;
+    if (!groupMap || typeof groupMap.values !== 'function') continue;
+    for (const group of groupMap.values()) {
+      const id = normalizeNumber(group?.group_id);
+      if (!id) continue;
+      const name = String(group?.group_name || group?.name || '').trim();
+      options.push({
+        label: name ? `${name}(${id})` : String(id),
+        value: id,
+      });
+    }
+  }
+  return dedupeByValue(options);
+}
+
+function getFriendOptions() {
+  const options = [];
+  for (const { bot } of getBotInstances()) {
+    const friendMap = bot?.fl;
+    if (!friendMap || typeof friendMap.values !== 'function') continue;
+    for (const friend of friendMap.values()) {
+      const id = normalizeNumber(friend?.user_id);
+      if (!id) continue;
+      const nickname = String(friend?.nickname || friend?.remark || '').trim();
+      options.push({
+        label: nickname ? `${nickname}(${id})` : String(id),
+        value: id,
+      });
+    }
+  }
+  return dedupeByValue(options);
+}
+
+function getMemeCharacterOptions() {
+  const memeBaseDir = path.join(process.cwd(), 'data', 'chat', 'meme');
+  if (!fs.existsSync(memeBaseDir)) return [];
+  try {
+    return fs
+      .readdirSync(memeBaseDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => ({ label: entry.name, value: entry.name }));
+  } catch (error) {
+    globalThis.logger?.warn?.(`[crystelf-plugin] 读取表情角色目录失败: ${error.message}`);
+    return [];
+  }
+}
+
+const BOT_ID_OPTIONS = Array.isArray(globalThis.Bot?.uin)
+  ? globalThis.Bot.uin.map((item) => {
+      const value = Number(item) || String(item);
+      return { label: String(item), value };
+    })
+  : [];
+
+const GROUP_OPTIONS = getGroupOptions();
+const FRIEND_OPTIONS = getFriendOptions();
+const MEME_CHARACTER_OPTIONS = getMemeCharacterOptions();
+
+function createTagsSelectProps(placeholder, extra = {}) {
+  return {
+    mode: 'tags',
+    options: [],
+    placeholder: placeholder || '请输入',
+    ...extra,
+  };
+}
+
+function createMultiSelectWithOptions(placeholder, options = [], extra = {}) {
+  return {
+    mode: 'multiple',
+    options,
+    placeholder: placeholder || '请选择',
+    ...extra,
+  };
+}
+
+function createQQSelectProps(placeholder = '请输入QQ号', options = []) {
+  return createTagsSelectProps(placeholder, { options });
+}
+
 const guobaSchema = [
   // config.json - 主配置
   {
@@ -299,7 +427,7 @@ const guobaSchema = [
     field: 'ai.workingModel',
     label: '工作模型',
     component: 'Input',
-    bottomHelpMessage: 'planner/记忆/话题/表达学习等轻任务使用的模型',
+    bottomHelpMessage: '用于 planner、记忆、话题、表达学习，以及表情包 AI 二次筛选',
     componentProps: {
       placeholder: '请输入工作模型名称',
     },
@@ -308,7 +436,7 @@ const guobaSchema = [
     field: 'ai.multimodalWorkingModel',
     label: '多模态模型',
     component: 'Input',
-    bottomHelpMessage: '看图和头像分析使用的模型',
+    bottomHelpMessage: '用于图片分析、表情包入库和看图描述',
     componentProps: {
       placeholder: '请输入多模态模型名称',
     },
@@ -317,7 +445,7 @@ const guobaSchema = [
     field: 'ai.isMultimodal',
     label: '启用多模态',
     component: 'Switch',
-    bottomHelpMessage: '开启后允许图片输入和看图工具',
+    bottomHelpMessage: '开启后允许自动分析群聊图片，并在对话中看图',
     componentProps: {
       checkedValue: true,
       unCheckedValue: false,
@@ -326,18 +454,17 @@ const guobaSchema = [
   {
     field: 'ai.nicknames',
     label: '额外昵称',
-    component: 'InputArray',
-    bottomHelpMessage: '会与 profile.nickName 合并作为触发昵称',
-    componentProps: {
-      placeholder: '请输入昵称，回车添加',
-    },
+    component: 'Select',
+    bottomHelpMessage: '会与 profile.nickName 合并，作为昵称触发词',
+    componentProps: createTagsSelectProps('请输入昵称'),
   },
   {
     field: 'ai.persona',
     label: '晶灵人设',
-    component: 'InputTextArea',
-    bottomHelpMessage: 'AI 的核心人设提示词',
+    component: 'Input',
+    bottomHelpMessage: 'AI 的核心人设提示词，支持直接粘贴长文本',
     componentProps: {
+      type: 'textarea',
       rows: 5,
       placeholder: '请输入人设描述',
     },
@@ -405,7 +532,7 @@ const guobaSchema = [
     field: 'ai.cooldownAfterReplyMs',
     label: '回复冷却',
     component: 'InputNumber',
-    bottomHelpMessage: '回复后进入冷却期，期间的新触发会合并回复',
+    bottomHelpMessage: '回复后进入冷却期，期间的新消息会被收集并合并处理',
     componentProps: {
       min: 0,
       max: 300000,
@@ -416,29 +543,23 @@ const guobaSchema = [
   {
     field: 'ai.blacklistGroups',
     label: '黑名单群',
-    component: 'InputArray',
-    bottomHelpMessage: '这些群里不会触发 AI',
-    componentProps: {
-      placeholder: '请输入群号，回车添加',
-    },
+    component: 'Select',
+    bottomHelpMessage: '这些群不会触发 AI；仍会同时受到 Yunzai 全局黑白名单影响',
+    componentProps: createTagsSelectProps('请选择或输入群号', { options: GROUP_OPTIONS }),
   },
   {
     field: 'ai.whitelistGroups',
     label: '白名单群',
-    component: 'InputArray',
-    bottomHelpMessage: '非空时只在这些群里触发 AI',
-    componentProps: {
-      placeholder: '请输入群号，回车添加',
-    },
+    component: 'Select',
+    bottomHelpMessage: '非空时仅这些群会触发 AI；仍会同时受到 Yunzai 全局黑白名单影响',
+    componentProps: createTagsSelectProps('请选择或输入群号', { options: GROUP_OPTIONS }),
   },
   {
     field: 'ai.imageAnalysisBlacklistUsers',
     label: '看图黑名单',
-    component: 'InputArray',
-    bottomHelpMessage: '这些用户不可调用看图/头像分析相关能力',
-    componentProps: {
-      placeholder: '请输入 QQ 号，回车添加',
-    },
+    component: 'Select',
+    bottomHelpMessage: '这些 QQ 的消息不会触发自动看图入库和图片分析',
+    componentProps: createQQSelectProps('请选择或输入QQ号', FRIEND_OPTIONS),
   },
   {
     label: '动态延迟',
@@ -448,7 +569,7 @@ const guobaSchema = [
     field: 'ai.dynamicDelay.enabled',
     label: '启用动态延迟',
     component: 'Switch',
-    bottomHelpMessage: '保留 mioku 的动态延迟配置结构',
+    bottomHelpMessage: '开启后，直接 @Bot 时会根据近期参与互动的人数延迟并合并回复',
     componentProps: {
       checkedValue: true,
       unCheckedValue: false,
@@ -458,7 +579,7 @@ const guobaSchema = [
     field: 'ai.dynamicDelay.interactionWindowMs',
     label: '互动窗口',
     component: 'InputNumber',
-    bottomHelpMessage: '动态延迟的互动统计窗口（毫秒）',
+    bottomHelpMessage: '统计多少时间内有多少不同用户参与了 @Bot 互动（毫秒）',
     componentProps: {
       min: 1000,
       max: 3600000,
@@ -470,7 +591,7 @@ const guobaSchema = [
     field: 'ai.dynamicDelay.baseDelayMs',
     label: '基础延迟',
     component: 'InputNumber',
-    bottomHelpMessage: '基础延迟（毫秒）',
+    bottomHelpMessage: '每多一个活跃互动用户，额外增加的延迟时长（毫秒）',
     componentProps: {
       min: 0,
       max: 600000,
@@ -482,7 +603,7 @@ const guobaSchema = [
     field: 'ai.dynamicDelay.maxDelayMs',
     label: '最大延迟',
     component: 'InputNumber',
-    bottomHelpMessage: '最大延迟（毫秒）',
+    bottomHelpMessage: '动态延迟上限（毫秒）',
     componentProps: {
       min: 0,
       max: 3600000,
@@ -497,17 +618,15 @@ const guobaSchema = [
   {
     field: 'ai.personality.states',
     label: '人格状态',
-    component: 'InputArray',
-    bottomHelpMessage: '可随机切换的人格状态',
-    componentProps: {
-      placeholder: '请输入人格状态，回车添加',
-    },
+    component: 'Select',
+    bottomHelpMessage: '可随机切换的人格状态文案',
+    componentProps: createTagsSelectProps('请输入人格状态'),
   },
   {
     field: 'ai.personality.stateProbability',
     label: '人格概率',
     component: 'InputNumber',
-    bottomHelpMessage: '随机切换人格状态的概率',
+    bottomHelpMessage: '每次生成提示词时，随机切换人格状态的概率',
     componentProps: {
       min: 0,
       max: 1,
@@ -519,9 +638,10 @@ const guobaSchema = [
   {
     field: 'ai.replyStyle.baseStyle',
     label: '基础风格',
-    component: 'InputTextArea',
-    bottomHelpMessage: '默认回复风格',
+    component: 'Input',
+    bottomHelpMessage: '默认回复风格，支持直接粘贴长文本',
     componentProps: {
+      type: 'textarea',
       rows: 4,
       placeholder: '请输入基础风格',
     },
@@ -529,17 +649,15 @@ const guobaSchema = [
   {
     field: 'ai.replyStyle.multipleStyles',
     label: '附加风格',
-    component: 'InputArray',
-    bottomHelpMessage: '可随机注入的额外风格',
-    componentProps: {
-      placeholder: '请输入额外风格，回车添加',
-    },
+    component: 'Select',
+    bottomHelpMessage: '可随机注入的一组附加风格',
+    componentProps: createTagsSelectProps('请输入附加风格'),
   },
   {
     field: 'ai.replyStyle.multipleProbability',
     label: '附加概率',
     component: 'InputNumber',
-    bottomHelpMessage: '启用额外风格的概率',
+    bottomHelpMessage: '每次生成提示词时，随机附加一种风格的概率',
     componentProps: {
       min: 0,
       max: 1,
@@ -646,7 +764,7 @@ const guobaSchema = [
     field: 'ai.planner.idleThresholdMs',
     label: '空闲阈值',
     component: 'InputNumber',
-    bottomHelpMessage: '保留字段：群聊空闲阈值',
+    bottomHelpMessage: '距离最后一次群内发言超过多久后，才会进入空闲插话候选（毫秒）',
     componentProps: {
       min: 60000,
       max: 86400000,
@@ -658,7 +776,7 @@ const guobaSchema = [
     field: 'ai.planner.idleMessageCount',
     label: '空闲消息数',
     component: 'InputNumber',
-    bottomHelpMessage: '保留字段：空闲插话保底消息数',
+    bottomHelpMessage: '自上次 Bot 发言后，至少累计多少条消息才允许空闲插话',
     componentProps: {
       min: 1,
       max: 1000,
@@ -669,11 +787,9 @@ const guobaSchema = [
   {
     field: 'ai.planner.idleCheckBotIds',
     label: '空闲Bot列表',
-    component: 'InputArray',
-    bottomHelpMessage: '保留字段：空闲检查 bot ID 列表',
-    componentProps: {
-      placeholder: '请输入 bot QQ，回车添加',
-    },
+    component: 'Select',
+    bottomHelpMessage: '限制哪些 Bot 参与空闲插话；留空表示当前群中所有在线 Bot 都可参与',
+    componentProps: createTagsSelectProps('请选择或输入Bot QQ号', { options: BOT_ID_OPTIONS }),
   },
   {
     label: '错别字 / 表情包 / 表达学习',
@@ -719,7 +835,7 @@ const guobaSchema = [
     field: 'ai.emoji.enabled',
     label: '启用表情包',
     component: 'Switch',
-    bottomHelpMessage: '允许 AI 用 [meme:emotion] 触发表情包',
+    bottomHelpMessage: '允许 AI 用 [meme:emotion] 发送本地表情包',
     componentProps: {
       checkedValue: true,
       unCheckedValue: false,
@@ -729,7 +845,7 @@ const guobaSchema = [
     field: 'ai.emoji.replyProbability',
     label: '表情概率',
     component: 'InputNumber',
-    bottomHelpMessage: '提示词中启用表情包指令的概率',
+    bottomHelpMessage: '每次构建提示词时，有多大概率告诉 AI 可以发一张表情包',
     componentProps: {
       min: 0,
       max: 1,
@@ -741,26 +857,22 @@ const guobaSchema = [
   {
     field: 'ai.emoji.characters',
     label: '表情角色',
-    component: 'InputArray',
-    bottomHelpMessage: '当前可用角色列表',
-    componentProps: {
-      placeholder: '请输入角色名，回车添加',
-    },
+    component: 'Select',
+    bottomHelpMessage: '限制可用的表情角色目录；留空则自动扫描 data/chat/meme',
+    componentProps: createTagsSelectProps('请选择或输入角色名', { options: MEME_CHARACTER_OPTIONS }),
   },
   {
     field: 'ai.emoji.availableEmotions',
     label: '可用情绪',
-    component: 'InputArray',
-    bottomHelpMessage: '允许 [meme:emotion] 使用的情绪枚举',
-    componentProps: {
-      placeholder: '请输入情绪，回车添加',
-    },
+    component: 'Select',
+    bottomHelpMessage: '限制 AI 允许使用的表情情绪；留空则按目录自动判断',
+    componentProps: createMultiSelectWithOptions('请选择可用情绪', SUPPORTED_EMOTION_OPTIONS),
   },
   {
     field: 'ai.emoji.useAISelection',
     label: 'AI筛图',
     component: 'Switch',
-    bottomHelpMessage: '保留字段：是否由 AI 二次筛选表情包',
+    bottomHelpMessage: '开启后会让工作模型在候选表情包中二次挑选，关闭则随机选择',
     componentProps: {
       checkedValue: true,
       unCheckedValue: false,
