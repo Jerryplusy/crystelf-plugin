@@ -107,7 +107,6 @@ const MEME_CHARACTER_OPTIONS = getMemeCharacterOptions();
 function createTagsSelectProps(placeholder, extra = {}) {
   return {
     mode: 'tags',
-    options: [],
     placeholder: placeholder || '请输入',
     ...extra,
   };
@@ -120,10 +119,6 @@ function createMultiSelectWithOptions(placeholder, options = [], extra = {}) {
     placeholder: placeholder || '请选择',
     ...extra,
   };
-}
-
-function createQQSelectProps(placeholder = '请输入QQ号', options = []) {
-  return createTagsSelectProps(placeholder, { options });
 }
 
 const guobaSchema = [
@@ -545,21 +540,21 @@ const guobaSchema = [
     label: '黑名单群',
     component: 'Select',
     bottomHelpMessage: '这些群不会触发 AI；仍会同时受到 Yunzai 全局黑白名单影响',
-    componentProps: createTagsSelectProps('请选择或输入群号', { options: GROUP_OPTIONS }),
+    componentProps: createMultiSelectWithOptions('请选择黑名单群', GROUP_OPTIONS),
   },
   {
     field: 'ai.whitelistGroups',
     label: '白名单群',
     component: 'Select',
     bottomHelpMessage: '非空时仅这些群会触发 AI；仍会同时受到 Yunzai 全局黑白名单影响',
-    componentProps: createTagsSelectProps('请选择或输入群号', { options: GROUP_OPTIONS }),
+    componentProps: createMultiSelectWithOptions('请选择白名单群', GROUP_OPTIONS),
   },
   {
     field: 'ai.imageAnalysisBlacklistUsers',
     label: '看图黑名单',
     component: 'Select',
     bottomHelpMessage: '这些 QQ 的消息不会触发自动看图入库和图片分析',
-    componentProps: createQQSelectProps('请选择或输入QQ号', FRIEND_OPTIONS),
+    componentProps: createMultiSelectWithOptions('请选择QQ号', FRIEND_OPTIONS),
   },
   {
     label: '动态延迟',
@@ -789,7 +784,7 @@ const guobaSchema = [
     label: '空闲Bot列表',
     component: 'Select',
     bottomHelpMessage: '限制哪些 Bot 参与空闲插话；留空表示当前群中所有在线 Bot 都可参与',
-    componentProps: createTagsSelectProps('请选择或输入Bot QQ号', { options: BOT_ID_OPTIONS }),
+    componentProps: createMultiSelectWithOptions('请选择 Bot', BOT_ID_OPTIONS),
   },
   {
     label: '错别字 / 表情包 / 表达学习',
