@@ -1,12 +1,12 @@
 import ConfigControl from '../lib/config/configControl.js';
 import cfg from '../../../lib/config/config.js';
 import PluginsLoader from '../../../lib/plugins/loader.js';
-import initDatabase from '../lib/ai-v2/db.js';
-import SessionManager from '../lib/ai-v2/session.js';
-import OpenAIChatClient from '../lib/ai-v2/openai-client.js';
-import HumanizeEngine from '../lib/ai-v2/humanize/index.js';
-import { MessageQueueManager } from '../lib/ai-v2/queue.js';
-import RateLimiter from '../lib/ai-v2/rate-limiter.js';
+import initDatabase from '../lib/ai/db.js';
+import SessionManager from '../lib/ai/session.js';
+import OpenAIChatClient from '../lib/ai/openai-client.js';
+import HumanizeEngine from '../lib/ai/humanize/index.js';
+import { MessageQueueManager } from '../lib/ai/queue.js';
+import RateLimiter from '../lib/ai/rate-limiter.js';
 import {
   buildStoredMessageFromEvent,
   extractContent,
@@ -17,9 +17,9 @@ import {
   isQuotingBot,
   sendAIResponse,
   sendEmoji,
-} from '../lib/ai-v2/message.js';
-import runChat from '../lib/ai-v2/chat-engine.js';
-import { processImage } from '../lib/ai-v2/image-analyzer.js';
+} from '../lib/ai/message.js';
+import runChat from '../lib/ai/chat-engine.js';
+import { processImage } from '../lib/ai/image-analyzer.js';
 
 const AI_PLUGIN_NAME = 'crystelfAI';
 const POKE_COOLDOWN_MS = 10 * 60_000;
@@ -274,7 +274,7 @@ function ensureIdleCheckTimer() {
 
       runtime.idleCheckProcessing.add(sessionId);
       try {
-        logger.info(`[crystelf-ai-v2] idle trigger session=${sessionId}`);
+        logger.info(`[crystelf-ai] idle trigger session=${sessionId}`);
 
         const history = runtime.db.getMessages(sessionId, cfg.historyCount);
         const botNickname = cfg.nicknames[0] || '晶灵';
@@ -291,7 +291,7 @@ function ensureIdleCheckTimer() {
         );
 
         logger.info(
-          `[crystelf-ai-v2] idle planner session=${sessionId} action=${plannerResult.action} reason=${JSON.stringify(plannerResult.reason || '')}`
+          `[crystelf-ai] idle planner session=${sessionId} action=${plannerResult.action} reason=${JSON.stringify(plannerResult.reason || '')}`
         );
 
         if (plannerResult.action !== 'reply') {
@@ -330,9 +330,9 @@ Suggestion:
         runtime.groupMessageCount.set(sessionId, 0);
         runtime.groupMessageCountAfterBot.set(sessionId, 0);
         runtime.groupLastIdleCheckTime.set(sessionId, now);
-        logger.info(`[crystelf-ai-v2] idle reply sent session=${sessionId}`);
+        logger.info(`[crystelf-ai] idle reply sent session=${sessionId}`);
       } catch (error) {
-        logger.error(`[crystelf-ai-v2] idle check failed session=${sessionId}: ${error.message}`);
+        logger.error(`[crystelf-ai] idle check failed session=${sessionId}: ${error.message}`);
       } finally {
         runtime.idleCheckProcessing.delete(sessionId);
       }
@@ -391,13 +391,13 @@ function isAllowedByYunzai(e) {
 
 function canHandleAIEvent(e) {
   if (!isPluginActiveInLoader()) {
-    logger.info('[crystelf-ai-v2] skip because Yunzai is in stopped state or plugin is unloaded');
+    logger.info('[crystelf-ai] skip because Yunzai is in stopped state or plugin is unloaded');
     return false;
   }
 
   if (!isAllowedByYunzai(e)) {
     logger.info(
-      `[crystelf-ai-v2] skip because blocked by Yunzai global/group config group=${e.group_id || 'private'} user=${e.user_id || e.operator_id || 0}`
+      `[crystelf-ai] skip because blocked by Yunzai global/group config group=${e.group_id || 'private'} user=${e.user_id || e.operator_id || 0}`
     );
     return false;
   }
@@ -461,7 +461,7 @@ async function detectTrigger(e, config, db) {
   const quotedBot = await isQuotingBot(e);
 
   if (quotedBot) {
-    logger.info(`[crystelf-ai-v2] trigger matched quoted bot message in group=${e.group_id}`);
+    logger.info(`[crystelf-ai] trigger matched quoted bot message in group=${e.group_id}`);
     return {
       shouldTrigger: true,
       reason: 'comment',
@@ -471,7 +471,7 @@ async function detectTrigger(e, config, db) {
   }
 
   if (extracted.isDirectAt) {
-    logger.info(`[crystelf-ai-v2] trigger matched direct @ in group=${e.group_id}`);
+    logger.info(`[crystelf-ai] trigger matched direct @ in group=${e.group_id}`);
     return {
       shouldTrigger: true,
       reason: 'reply',
@@ -481,7 +481,7 @@ async function detectTrigger(e, config, db) {
   }
 
   if (extracted.nicknameMatched) {
-    logger.info(`[crystelf-ai-v2] trigger matched nickname in group=${e.group_id}`);
+    logger.info(`[crystelf-ai] trigger matched nickname in group=${e.group_id}`);
     return {
       shouldTrigger: true,
       reason: 'nickname',
@@ -587,7 +587,7 @@ async function maybeProcessImages(e, runtimeState) {
         runtimeState.config.multimodalWorkingModel,
         runtimeState.db
       ).catch((error) => {
-        logger.warn(`[crystelf-ai-v2] auto image processing failed: ${error.message}`);
+        logger.warn(`[crystelf-ai] auto image processing failed: ${error.message}`);
       });
     }
   }
@@ -695,7 +695,7 @@ async function runReplyFlow(event, runtimeState, options) {
 
   if (result.messages.length > 0 || result.emojiPath) {
     logger.info(
-      `[crystelf-ai-v2] sending ${result.messages.length} message(s) session=${sessionId} type=${replyType}`
+      `[crystelf-ai] sending ${result.messages.length} message(s) session=${sessionId} type=${replyType}`
     );
     if (result.messages.length > 0) {
       await sendAIResponse(event, result.messages, runtimeState.humanize.typoGenerator);
@@ -709,7 +709,7 @@ async function runReplyFlow(event, runtimeState, options) {
     return { sent: true, result };
   }
 
-  logger.warn(`[crystelf-ai-v2] chat engine returned no messages session=${sessionId}`);
+  logger.warn(`[crystelf-ai] chat engine returned no messages session=${sessionId}`);
   return { sent: false, result };
 }
 
@@ -718,12 +718,12 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
   const triggerType = reviewPayload ? 'review' : trigger.reason;
 
   logger.info(
-    `[crystelf-ai-v2] process start session=${sessionId} trigger=${triggerType} review=${Boolean(reviewPayload)}`
+    `[crystelf-ai] process start session=${sessionId} trigger=${triggerType} review=${Boolean(reviewPayload)}`
   );
 
   if (runtimeState.processing.has(sessionId)) {
     runtimeState.queueManager.enqueue(sessionId, e, triggerType);
-    logger.info(`[crystelf-ai-v2] session busy, enqueue trigger session=${sessionId}`);
+    logger.info(`[crystelf-ai] session busy, enqueue trigger session=${sessionId}`);
     return false;
   }
 
@@ -755,27 +755,27 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
       );
 
       logger.info(
-        `[crystelf-ai-v2] planner raw session=${sessionId} trigger=${triggerType} raw=${JSON.stringify(plannerResult.rawResponse || '')}`
+        `[crystelf-ai] planner raw session=${sessionId} trigger=${triggerType} raw=${JSON.stringify(plannerResult.rawResponse || '')}`
       );
       logger.info(
-        `[crystelf-ai-v2] planner result session=${sessionId} trigger=${triggerType} action=${plannerResult.action} reason=${JSON.stringify(plannerResult.reason || '')}`
+        `[crystelf-ai] planner result session=${sessionId} trigger=${triggerType} action=${plannerResult.action} reason=${JSON.stringify(plannerResult.reason || '')}`
       );
 
       if (plannerResult.action === 'wait' || plannerResult.action === 'complete') {
         logger.info(
-          `[crystelf-ai-v2] skip reply by planner session=${sessionId} action=${plannerResult.action}`
+          `[crystelf-ai] skip reply by planner session=${sessionId} action=${plannerResult.action}`
         );
         return false;
       }
     } else if (triggerType === 'reply') {
-      logger.info(`[crystelf-ai-v2] bypass planner for direct @ trigger session=${sessionId}`);
+      logger.info(`[crystelf-ai] bypass planner for direct @ trigger session=${sessionId}`);
     }
 
     if (
       shouldRateLimit &&
       !runtimeState.rateLimiter.canProcess(e.user_id, e.group_id, messageContent)
     ) {
-      logger.info(`[crystelf-ai-v2] rate limited session=${sessionId} user=${e.user_id}`);
+      logger.info(`[crystelf-ai] rate limited session=${sessionId} user=${e.user_id}`);
       return false;
     }
 
@@ -804,7 +804,7 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
 
     return false;
   } catch (error) {
-    logger.error(`[crystelf-ai-v2] 处理群消息失败: ${error.message}`);
+    logger.error(`[crystelf-ai] 处理群消息失败: ${error.message}`);
     return false;
   } finally {
     runtimeState.processing.delete(sessionId);
@@ -859,7 +859,7 @@ async function processReviewMessages(sessionId, groupId, collected, selfId) {
     }
   } catch (error) {
     logger.error(
-      `[crystelf-ai-v2] review processing failed session=${sessionId}: ${error.message}`
+      `[crystelf-ai] review processing failed session=${sessionId}: ${error.message}`
     );
   } finally {
     runtime.processing.delete(sessionId);
@@ -891,7 +891,7 @@ async function processCooldownWithPlanner(sessionId, groupId, collected, selfId)
     );
 
     logger.info(
-      `[crystelf-ai-v2] cooldown planner session=${sessionId} action=${plannerResult.action} reason=${JSON.stringify(plannerResult.reason || '')}`
+      `[crystelf-ai] cooldown planner session=${sessionId} action=${plannerResult.action} reason=${JSON.stringify(plannerResult.reason || '')}`
     );
 
     if (plannerResult.action !== 'reply') {
@@ -934,7 +934,7 @@ async function processCooldownWithPlanner(sessionId, groupId, collected, selfId)
       startCooldownTimer(sessionId, groupId, selfId);
     }
   } catch (error) {
-    logger.error(`[crystelf-ai-v2] cooldown planner failed session=${sessionId}: ${error.message}`);
+    logger.error(`[crystelf-ai] cooldown planner failed session=${sessionId}: ${error.message}`);
   } finally {
     runtime.processing.delete(sessionId);
     await processQueuedMessages(sessionId);
@@ -952,7 +952,7 @@ async function processDynamicDelayQueue(sessionId, groupId, selfId) {
   runtime.dynamicDelayQueues.delete(sessionId);
 
   if (runtime.processing.has(sessionId)) {
-    logger.info(`[crystelf-ai-v2] dynamic delay skipped because session busy session=${sessionId}`);
+    logger.info(`[crystelf-ai] dynamic delay skipped because session busy session=${sessionId}`);
     return;
   }
 
@@ -981,7 +981,7 @@ async function processDynamicDelayQueue(sessionId, groupId, selfId) {
     };
 
     logger.info(
-      `[crystelf-ai-v2] dynamic delay flush session=${sessionId} count=${messages.length} users=${new Set(messages.map((item) => item.userId)).size}`
+      `[crystelf-ai] dynamic delay flush session=${sessionId} count=${messages.length} users=${new Set(messages.map((item) => item.userId)).size}`
     );
 
     const response = await runReplyFlow(event, runtime, {
@@ -1002,7 +1002,7 @@ async function processDynamicDelayQueue(sessionId, groupId, selfId) {
     }
   } catch (error) {
     logger.error(
-      `[crystelf-ai-v2] dynamic delay processing failed session=${sessionId}: ${error.message}`
+      `[crystelf-ai] dynamic delay processing failed session=${sessionId}: ${error.message}`
     );
   } finally {
     runtime.processing.delete(sessionId);
@@ -1027,13 +1027,13 @@ function startDynamicDelayTimer(sessionId, groupId, delayMs, selfId) {
 
   queueData.delayUntil = Date.now() + delayMs;
   logger.info(
-    `[crystelf-ai-v2] dynamic delay start session=${sessionId} delayMs=${delayMs} interactions=${runtime.rateLimiter.getInteractionCount(groupId)}`
+    `[crystelf-ai] dynamic delay start session=${sessionId} delayMs=${delayMs} interactions=${runtime.rateLimiter.getInteractionCount(groupId)}`
   );
 
   queueData.timer = setTimeout(() => {
     processDynamicDelayQueue(sessionId, groupId, selfId).catch((error) => {
       logger.error(
-        `[crystelf-ai-v2] dynamic delay flush failed session=${sessionId}: ${error.message}`
+        `[crystelf-ai] dynamic delay flush failed session=${sessionId}: ${error.message}`
       );
     });
   }, delayMs);
@@ -1054,7 +1054,7 @@ function startCooldownTimer(sessionId, groupId, selfId) {
     runtime.cooldownUntil.delete(sessionId);
 
     if (collected.length === 0) {
-      logger.info(`[crystelf-ai-v2] cooldown finished with no messages session=${sessionId}`);
+      logger.info(`[crystelf-ai] cooldown finished with no messages session=${sessionId}`);
       return;
     }
 
@@ -1062,7 +1062,7 @@ function startCooldownTimer(sessionId, groupId, selfId) {
     if (directAtMessages.length > 0) {
       processReviewMessages(sessionId, groupId, collected, selfId).catch((error) => {
         logger.error(
-          `[crystelf-ai-v2] cooldown review failed session=${sessionId}: ${error.message}`
+          `[crystelf-ai] cooldown review failed session=${sessionId}: ${error.message}`
         );
       });
       return;
@@ -1070,7 +1070,7 @@ function startCooldownTimer(sessionId, groupId, selfId) {
 
     processCooldownWithPlanner(sessionId, groupId, collected, selfId).catch((error) => {
       logger.error(
-        `[crystelf-ai-v2] cooldown planner failed session=${sessionId}: ${error.message}`
+        `[crystelf-ai] cooldown planner failed session=${sessionId}: ${error.message}`
       );
     });
   }, cooldownMs);
@@ -1110,7 +1110,7 @@ async function processQueuedMessages(sessionId) {
   runtime.processing.add(sessionId);
 
   try {
-    logger.info(`[crystelf-ai-v2] queue flush session=${sessionId} count=${queue.length}`);
+    logger.info(`[crystelf-ai] queue flush session=${sessionId} count=${queue.length}`);
     const queuedContents = [];
     for (const item of queue) {
       const content = await getQueuedContent(item, runtime);
@@ -1159,7 +1159,7 @@ async function processQueuedMessages(sessionId) {
       startCooldownTimer(sessionId, groupId, selfId);
     }
   } catch (error) {
-    logger.error(`[crystelf-ai-v2] queue processing failed session=${sessionId}: ${error.message}`);
+    logger.error(`[crystelf-ai] queue processing failed session=${sessionId}: ${error.message}`);
   } finally {
     runtime.processing.delete(sessionId);
     runtime.queueManager.clearActiveTarget(sessionId);
@@ -1214,7 +1214,7 @@ async function onGroupMessage(e) {
 
   if (detectResetCommand(e)) {
     logger.info(
-      `[crystelf-ai-v2] skip normal flow because reset command matched session=${sessionId}`
+      `[crystelf-ai] skip normal flow because reset command matched session=${sessionId}`
     );
     return;
   }
@@ -1234,7 +1234,7 @@ async function onGroupMessage(e) {
         e,
         storedText || trigger.extracted?.originalText || trigger.extracted?.text
       );
-      logger.info(`[crystelf-ai-v2] dynamic delay collected direct @ session=${sessionId}`);
+      logger.info(`[crystelf-ai] dynamic delay collected direct @ session=${sessionId}`);
     }
     return;
   }
@@ -1245,7 +1245,7 @@ async function onGroupMessage(e) {
 
   if (runtimeState.processing.has(sessionId)) {
     runtimeState.queueManager.enqueue(sessionId, e, trigger.reason);
-    logger.info(`[crystelf-ai-v2] session busy, trigger queued session=${sessionId}`);
+    logger.info(`[crystelf-ai] session busy, trigger queued session=${sessionId}`);
     return;
   }
 
@@ -1257,7 +1257,7 @@ async function onGroupMessage(e) {
         trigger.extracted?.originalText || storedText || trigger.extracted?.text || ''
       )
     ) {
-      logger.info(`[crystelf-ai-v2] rate limited direct @ session=${sessionId} user=${e.user_id}`);
+      logger.info(`[crystelf-ai] rate limited direct @ session=${sessionId} user=${e.user_id}`);
       return;
     }
 
@@ -1303,7 +1303,7 @@ async function onGroupPoke(e) {
   const sessionId = getSessionId(e.group_id);
   if (runtimeState.processing.has(sessionId)) {
     runtimeState.queueManager.enqueue(sessionId, e, 'poked');
-    logger.info(`[crystelf-ai-v2] poke queued session=${sessionId}`);
+    logger.info(`[crystelf-ai] poke queued session=${sessionId}`);
     return;
   }
 
@@ -1332,7 +1332,7 @@ async function onGroupPoke(e) {
       runtimeState.sessionManager.touch(sessionId);
     }
   } catch (error) {
-    logger.error(`[crystelf-ai-v2] poke processing failed session=${sessionId}: ${error.message}`);
+    logger.error(`[crystelf-ai] poke processing failed session=${sessionId}: ${error.message}`);
   } finally {
     runtimeState.processing.delete(sessionId);
     await processQueuedMessages(sessionId);
