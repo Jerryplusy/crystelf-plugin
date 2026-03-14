@@ -1,4 +1,6 @@
 import ConfigControl from '../lib/config/configControl.js';
+import cfg from '../../../lib/config/config.js';
+import PluginsLoader from '../../../lib/plugins/loader.js';
 import initDatabase from '../lib/ai-v2/db.js';
 import SessionManager from '../lib/ai-v2/session.js';
 import OpenAIChatClient from '../lib/ai-v2/openai-client.js';
@@ -19,6 +21,7 @@ import {
 import runChat from '../lib/ai-v2/chat-engine.js';
 import { processImage } from '../lib/ai-v2/image-analyzer.js';
 
+const AI_PLUGIN_NAME = 'crystelfAI';
 const POKE_COOLDOWN_MS = 10 * 60_000;
 const IDLE_CHECK_INTERVAL_MS = 60_000;
 
@@ -240,9 +243,8 @@ function ensureIdleCheckTimer() {
       }
 
       const messageCountAfterBot = runtime.groupMessageCountAfterBot.get(sessionId) ?? 0;
-      const messageCount = lastBotTime > 0
-        ? messageCountAfterBot
-        : runtime.groupMessageCount.get(sessionId) ?? 0;
+      const messageCount =
+        lastBotTime > 0 ? messageCountAfterBot : (runtime.groupMessageCount.get(sessionId) ?? 0);
 
       if (messageCount < messageCountThreshold) {
         continue;
@@ -360,6 +362,47 @@ function getGroupName(e) {
   return e?.group_name || e?.group?.info?.group_name;
 }
 
+function isPluginActiveInLoader() {
+  const priority = Array.isArray(PluginsLoader?.priority) ? PluginsLoader.priority : [];
+  if (!priority.length) {
+    return true;
+  }
+
+  return priority.some((item) => item?.name === AI_PLUGIN_NAME);
+}
+
+function isAllowedByYunzai(e) {
+  if (!PluginsLoader.checkBlack(e)) {
+    return false;
+  }
+
+  if (!PluginsLoader.checkDisable({ e, name: AI_PLUGIN_NAME })) {
+    return false;
+  }
+
+  const groupCfg = cfg.getGroup(e.self_id, e.group_id);
+  if (groupCfg?.disable?.length && groupCfg.disable.includes(AI_PLUGIN_NAME)) {
+    return false;
+  }
+  return !(groupCfg?.enable?.length && !groupCfg.enable.includes(AI_PLUGIN_NAME));
+}
+
+function canHandleAIEvent(e) {
+  if (!isPluginActiveInLoader()) {
+    logger.info('[crystelf-ai-v2] skip because Yunzai is in stopped state or plugin is unloaded');
+    return false;
+  }
+
+  if (!isAllowedByYunzai(e)) {
+    logger.info(
+      `[crystelf-ai-v2] skip because blocked by Yunzai global/group config group=${e.group_id || 'private'} user=${e.user_id || e.operator_id || 0}`
+    );
+    return false;
+  }
+
+  return true;
+}
+
 async function getMemberName(bot, groupId, userId) {
   try {
     const result = await bot.sendApi('get_group_member_info', {
@@ -378,7 +421,10 @@ function recordGroupActivity(runtimeState, e) {
   const selfId = getBotUin(e);
 
   runtimeState.groupLastActivityTime.set(sessionId, Date.now());
-  runtimeState.groupMessageCount.set(sessionId, (runtimeState.groupMessageCount.get(sessionId) ?? 0) + 1);
+  runtimeState.groupMessageCount.set(
+    sessionId,
+    (runtimeState.groupMessageCount.get(sessionId) ?? 0) + 1
+  );
   runtimeState.groupMessageCountAfterBot.set(
     sessionId,
     (runtimeState.groupMessageCountAfterBot.get(sessionId) ?? 0) + 1
@@ -592,7 +638,8 @@ async function runReplyFlow(event, runtimeState, options) {
   } = options;
 
   runtimeState.sessionManager.getOrCreate(sessionId, 'group', event.group_id);
-  const chatHistory = history || runtimeState.db.getMessages(sessionId, runtimeState.config.historyCount);
+  const chatHistory =
+    history || runtimeState.db.getMessages(sessionId, runtimeState.config.historyCount);
   const botRole = await getBotRole({ bot: event.bot, group_id: event.group_id });
   const resolvedGroupInfo =
     groupInfo ||
@@ -602,7 +649,12 @@ async function runReplyFlow(event, runtimeState, options) {
       group_name: event.group_name,
       group: event.group,
     }));
-  const humanizeContexts = await getHumanizeContexts(runtimeState, sessionId, targetMessage, chatHistory);
+  const humanizeContexts = await getHumanizeContexts(
+    runtimeState,
+    sessionId,
+    targetMessage,
+    chatHistory
+  );
 
   const toolCtx = {
     event,
@@ -708,14 +760,19 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
       );
 
       if (plannerResult.action === 'wait' || plannerResult.action === 'complete') {
-        logger.info(`[crystelf-ai-v2] skip reply by planner session=${sessionId} action=${plannerResult.action}`);
+        logger.info(
+          `[crystelf-ai-v2] skip reply by planner session=${sessionId} action=${plannerResult.action}`
+        );
         return false;
       }
     } else if (triggerType === 'reply') {
       logger.info(`[crystelf-ai-v2] bypass planner for direct @ trigger session=${sessionId}`);
     }
 
-    if (shouldRateLimit && !runtimeState.rateLimiter.canProcess(e.user_id, e.group_id, messageContent)) {
+    if (
+      shouldRateLimit &&
+      !runtimeState.rateLimiter.canProcess(e.user_id, e.group_id, messageContent)
+    ) {
       logger.info(`[crystelf-ai-v2] rate limited session=${sessionId} user=${e.user_id}`);
       return false;
     }
@@ -734,7 +791,10 @@ async function processGroupMessage(e, runtimeState, trigger, reviewPayload) {
     });
 
     if (response.sent) {
-      runtimeState.cooldownUntil.set(sessionId, Date.now() + runtimeState.config.cooldownAfterReplyMs);
+      runtimeState.cooldownUntil.set(
+        sessionId,
+        Date.now() + runtimeState.config.cooldownAfterReplyMs
+      );
       startCooldownTimer(sessionId, e.group_id, getBotUin(e));
       runtimeState.sessionManager.touch(sessionId);
       return true;
@@ -796,7 +856,9 @@ async function processReviewMessages(sessionId, groupId, collected, selfId) {
       startCooldownTimer(sessionId, groupId, selfId);
     }
   } catch (error) {
-    logger.error(`[crystelf-ai-v2] review processing failed session=${sessionId}: ${error.message}`);
+    logger.error(
+      `[crystelf-ai-v2] review processing failed session=${sessionId}: ${error.message}`
+    );
   } finally {
     runtime.processing.delete(sessionId);
     await processQueuedMessages(sessionId);
@@ -937,7 +999,9 @@ async function processDynamicDelayQueue(sessionId, groupId, selfId) {
       startCooldownTimer(sessionId, groupId, selfId);
     }
   } catch (error) {
-    logger.error(`[crystelf-ai-v2] dynamic delay processing failed session=${sessionId}: ${error.message}`);
+    logger.error(
+      `[crystelf-ai-v2] dynamic delay processing failed session=${sessionId}: ${error.message}`
+    );
   } finally {
     runtime.processing.delete(sessionId);
     await processQueuedMessages(sessionId);
@@ -966,7 +1030,9 @@ function startDynamicDelayTimer(sessionId, groupId, delayMs, selfId) {
 
   queueData.timer = setTimeout(() => {
     processDynamicDelayQueue(sessionId, groupId, selfId).catch((error) => {
-      logger.error(`[crystelf-ai-v2] dynamic delay flush failed session=${sessionId}: ${error.message}`);
+      logger.error(
+        `[crystelf-ai-v2] dynamic delay flush failed session=${sessionId}: ${error.message}`
+      );
     });
   }, delayMs);
 }
@@ -993,13 +1059,17 @@ function startCooldownTimer(sessionId, groupId, selfId) {
     const directAtMessages = collected.filter((item) => item.isDirectAt);
     if (directAtMessages.length > 0) {
       processReviewMessages(sessionId, groupId, collected, selfId).catch((error) => {
-        logger.error(`[crystelf-ai-v2] cooldown review failed session=${sessionId}: ${error.message}`);
+        logger.error(
+          `[crystelf-ai-v2] cooldown review failed session=${sessionId}: ${error.message}`
+        );
       });
       return;
     }
 
     processCooldownWithPlanner(sessionId, groupId, collected, selfId).catch((error) => {
-      logger.error(`[crystelf-ai-v2] cooldown planner failed session=${sessionId}: ${error.message}`);
+      logger.error(
+        `[crystelf-ai-v2] cooldown planner failed session=${sessionId}: ${error.message}`
+      );
     });
   }, cooldownMs);
 
@@ -1100,6 +1170,9 @@ async function onGroupMessage(e) {
   if (!appConfig.ai) {
     return;
   }
+  if (!canHandleAIEvent(e)) {
+    return;
+  }
   if (e.user_id === getBotUin(e)) {
     return;
   }
@@ -1138,7 +1211,9 @@ async function onGroupMessage(e) {
     .catch(() => null);
 
   if (detectResetCommand(e)) {
-    logger.info(`[crystelf-ai-v2] skip normal flow because reset command matched session=${sessionId}`);
+    logger.info(
+      `[crystelf-ai-v2] skip normal flow because reset command matched session=${sessionId}`
+    );
     return;
   }
 
@@ -1152,7 +1227,11 @@ async function onGroupMessage(e) {
   if (delayQueue && Date.now() < delayQueue.delayUntil) {
     if (trigger.reason === 'reply') {
       runtimeState.rateLimiter.recordInteraction(e.group_id, e.user_id);
-      collectDynamicDelayMessage(sessionId, e, storedText || trigger.extracted?.originalText || trigger.extracted?.text);
+      collectDynamicDelayMessage(
+        sessionId,
+        e,
+        storedText || trigger.extracted?.originalText || trigger.extracted?.text
+      );
       logger.info(`[crystelf-ai-v2] dynamic delay collected direct @ session=${sessionId}`);
     }
     return;
@@ -1169,11 +1248,13 @@ async function onGroupMessage(e) {
   }
 
   if (trigger.reason === 'reply' && runtimeState.config.dynamicDelay?.enabled) {
-    if (!runtimeState.rateLimiter.canProcess(
-      e.user_id,
-      e.group_id,
-      trigger.extracted?.originalText || storedText || trigger.extracted?.text || ''
-    )) {
+    if (
+      !runtimeState.rateLimiter.canProcess(
+        e.user_id,
+        e.group_id,
+        trigger.extracted?.originalText || storedText || trigger.extracted?.text || ''
+      )
+    ) {
       logger.info(`[crystelf-ai-v2] rate limited direct @ session=${sessionId} user=${e.user_id}`);
       return;
     }
@@ -1181,7 +1262,8 @@ async function onGroupMessage(e) {
     runtimeState.rateLimiter.recordInteraction(e.group_id, e.user_id);
     const delayInfo = runtimeState.rateLimiter.getDelayInfo(e.group_id);
     if (delayInfo.shouldDelay) {
-      const content = trigger.extracted?.originalText || storedText || trigger.extracted?.text || '[无文本]';
+      const content =
+        trigger.extracted?.originalText || storedText || trigger.extracted?.text || '[无文本]';
       runtimeState.rateLimiter.record(e.user_id, e.group_id, content);
       collectDynamicDelayMessage(sessionId, e, content);
       startDynamicDelayTimer(sessionId, e.group_id, delayInfo.delayMs, getBotUin(e));
@@ -1196,6 +1278,9 @@ async function onGroupPoke(e) {
   const runtimeState = await ensureRuntime();
   const appConfig = ConfigControl.get('config') || {};
   if (!appConfig.ai) {
+    return;
+  }
+  if (!canHandleAIEvent(e)) {
     return;
   }
 
