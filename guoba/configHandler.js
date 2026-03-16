@@ -36,6 +36,27 @@ function flattenObject(obj, prefix = '') {
   return result;
 }
 
+const NUMBER_ARRAY_FIELDS = new Set([
+  'ai.blacklistGroups',
+  'ai.whitelistGroups',
+  'ai.imageAnalysisBlacklistUsers',
+  'ai.planner.idleCheckBotIds',
+]);
+
+function normalizeFieldValue(fieldPath, value) {
+  if (!NUMBER_ARRAY_FIELDS.has(fieldPath)) {
+    return value;
+  }
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => Number.parseInt(item, 10))
+    .filter((item) => Number.isFinite(item));
+}
+
 /**
  * 获取当前配置
  * @returns {Promise<Object>} 当前配置对象
@@ -80,7 +101,7 @@ export async function setConfigData(data, { Result }) {
 
       // 使用lodash.set设置嵌套属性
       const keyPath = parts.slice(1).join('.');
-      lodash.set(configUpdates[configName], keyPath, value);
+      lodash.set(configUpdates[configName], keyPath, normalizeFieldValue(fieldPath, value));
     }
 
     // 只更新实际有变化的配置文件
@@ -233,58 +254,52 @@ function validateConfig(configType, config = null) {
   // 根据配置类型进行特定验证
   switch (configType) {
     case 'ai':
-      // 验证AI配置
-      if (!config.baseApi) {
-        errors.push('API基础地址不能为空');
-      }
-
-      if (!config.mode) {
-        errors.push('对话模式不能为空');
+      if (!config.apiUrl) {
+        errors.push('API地址不能为空');
       }
 
       if (!config.apiKey) {
         errors.push('API密钥不能为空');
       }
 
-      if (!config.modelType) {
-        errors.push('模型名称不能为空');
+      if (!config.model) {
+        errors.push('主对话模型不能为空');
       }
 
-      if (!config.multimodalModel) {
-        errors.push('多模态模型名称不能为空');
+      if (!config.workingModel) {
+        errors.push('工作模型不能为空');
       }
 
-      if (!config.character) {
-        errors.push('表情包角色不能为空');
+      if (!config.multimodalWorkingModel) {
+        errors.push('多模态模型不能为空');
       }
 
-      if (!config.botPersona) {
-        errors.push('机器人人设不能为空');
+      if (!config.persona) {
+        errors.push('晶灵人设不能为空');
       }
 
-      // 验证数值范围
       if (config.temperature !== undefined && (config.temperature < 0 || config.temperature > 2)) {
         errors.push('温度值必须在0-2之间');
       }
 
-      if (config.concurrency !== undefined && (config.concurrency < 1 || config.concurrency > 10)) {
-        errors.push('并发数必须在1-10之间');
+      if (config.maxIterations !== undefined && config.maxIterations < -1) {
+        errors.push('最大迭代次数不能小于-1');
       }
 
-      if (
-        config.chatHistory !== undefined &&
-        (config.chatHistory < 1 || config.chatHistory > 100)
-      ) {
-        errors.push('聊天历史长度必须在1-100之间');
+      if (config.historyCount !== undefined && (config.historyCount < 1 || config.historyCount > 500)) {
+        errors.push('历史条数必须在1-500之间');
       }
 
-      // 验证数组字段
-      if (config.blockGroup && !Array.isArray(config.blockGroup)) {
-        errors.push('禁用群聊必须是数组');
+      if (config.blacklistGroups && !Array.isArray(config.blacklistGroups)) {
+        errors.push('黑名单群必须是数组');
       }
 
-      if (config.whiteGroup && !Array.isArray(config.whiteGroup)) {
-        errors.push('白名单群聊必须是数组');
+      if (config.whitelistGroups && !Array.isArray(config.whitelistGroups)) {
+        errors.push('白名单群必须是数组');
+      }
+
+      if (config.nicknames && !Array.isArray(config.nicknames)) {
+        errors.push('额外昵称必须是数组');
       }
       break;
 

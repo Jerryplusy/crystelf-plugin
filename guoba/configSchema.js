@@ -1,3 +1,126 @@
+import fs from 'fs';
+import path from 'path';
+
+const SUPPORTED_EMOTION_OPTIONS = [
+  'happy',
+  'sad',
+  'angry',
+  'surprised',
+  'confused',
+  'excited',
+  'tired',
+  'shy',
+  'proud',
+  'default',
+  'funny',
+  'cute',
+  'love',
+  'neutral',
+].map((value) => ({ label: value, value }));
+
+function normalizeNumber(value) {
+  const num = Number.parseInt(value, 10);
+  return Number.isFinite(num) ? num : null;
+}
+
+function dedupeByValue(options = []) {
+  const map = new Map();
+  for (const item of options) {
+    if (!item || item.value === undefined || item.value === null) continue;
+    const key = String(item.value);
+    if (!map.has(key)) {
+      map.set(key, item);
+    }
+  }
+  return [...map.values()];
+}
+
+function getBotInstances() {
+  const botRoot = globalThis.Bot;
+  const uins = Array.isArray(botRoot?.uin) ? botRoot.uin : [];
+  return uins
+    .map((uin) => ({ uin, bot: botRoot?.[uin] }))
+    .filter((item) => item.bot);
+}
+
+function getGroupOptions() {
+  const options = [];
+  for (const { bot } of getBotInstances()) {
+    const groupMap = bot?.gl;
+    if (!groupMap || typeof groupMap.values !== 'function') continue;
+    for (const group of groupMap.values()) {
+      const id = normalizeNumber(group?.group_id);
+      if (!id) continue;
+      const name = String(group?.group_name || group?.name || '').trim();
+      options.push({
+        label: name ? `${name}(${id})` : String(id),
+        value: id,
+      });
+    }
+  }
+  return dedupeByValue(options);
+}
+
+function getFriendOptions() {
+  const options = [];
+  for (const { bot } of getBotInstances()) {
+    const friendMap = bot?.fl;
+    if (!friendMap || typeof friendMap.values !== 'function') continue;
+    for (const friend of friendMap.values()) {
+      const id = normalizeNumber(friend?.user_id);
+      if (!id) continue;
+      const nickname = String(friend?.nickname || friend?.remark || '').trim();
+      options.push({
+        label: nickname ? `${nickname}(${id})` : String(id),
+        value: id,
+      });
+    }
+  }
+  return dedupeByValue(options);
+}
+
+function getMemeCharacterOptions() {
+  const memeBaseDir = path.join(process.cwd(), 'data', 'chat', 'meme');
+  if (!fs.existsSync(memeBaseDir)) return [];
+  try {
+    return fs
+      .readdirSync(memeBaseDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => ({ label: entry.name, value: entry.name }));
+  } catch (error) {
+    globalThis.logger?.warn?.(`[crystelf-plugin] 读取表情角色目录失败: ${error.message}`);
+    return [];
+  }
+}
+
+const BOT_ID_OPTIONS = Array.isArray(globalThis.Bot?.uin)
+  ? globalThis.Bot.uin.map((item) => {
+      const value = Number(item) || String(item);
+      return { label: String(item), value };
+    })
+  : [];
+
+const GROUP_OPTIONS = getGroupOptions();
+const FRIEND_OPTIONS = getFriendOptions();
+const MEME_CHARACTER_OPTIONS = getMemeCharacterOptions();
+
+function createTagsSelectProps(placeholder, extra = {}) {
+  return {
+    mode: 'tags',
+    placeholder: placeholder || '请输入',
+    ...extra,
+  };
+}
+
+function createMultiSelectWithOptions(placeholder, options = [], extra = {}) {
+  return {
+    mode: 'multiple',
+    options,
+    placeholder: placeholder || '请选择',
+    ...extra,
+  };
+}
+
 const guobaSchema = [
   // config.json - 主配置
   {
@@ -267,454 +390,523 @@ const guobaSchema = [
     component: 'SOFT_GROUP_BEGIN',
   },
   {
-    field: 'ai.mode',
-    label: '对话模式',
-    component: 'Select',
-    bottomHelpMessage: '推荐使用混合模式，如果你不喜欢词库或不想消耗token可以修改',
-    componentProps: {
-      options: [
-        { label: '混合模式', value: 'mix' },
-        { label: 'AI模式', value: 'ai' },
-        { label: '词库模式', value: 'keyword' },
-      ],
-      placeholder: '请选择对话模式',
-    },
-  },
-  {
-    field: 'ai.baseApi',
-    label: 'API基础地址',
+    field: 'ai.apiUrl',
+    label: 'API地址',
     component: 'Input',
-    bottomHelpMessage: '请求基础api地址(仅支持openai),其余可自行部署newapi代理',
+    bottomHelpMessage: 'OpenAI 兼容接口地址',
     required: true,
     componentProps: {
-      placeholder: '请输入API基础地址，如: https://api.siliconflow.cn/v1',
+      placeholder: '请输入 API 地址，如 https://api.openai.com/v1',
     },
   },
   {
     field: 'ai.apiKey',
     label: 'API密钥',
     component: 'InputPassword',
-    bottomHelpMessage: '用于请求API的密钥',
-    required: true,
+    bottomHelpMessage: '请求模型接口使用的密钥',
     componentProps: {
-      placeholder: '请输入API密钥',
+      placeholder: '请输入 API 密钥',
     },
   },
   {
-    field: 'ai.modelType',
-    label: '文本模型',
+    field: 'ai.model',
+    label: '主对话模型',
     component: 'Input',
-    bottomHelpMessage: '用于文本生成的模型名称',
+    bottomHelpMessage: '主回复使用的模型名称',
     required: true,
     componentProps: {
-      placeholder: '请输入模型名称，如: deepseek-ai/DeepSeek-V3.2-Exp',
+      placeholder: '请输入模型名称',
+    },
+  },
+  {
+    field: 'ai.workingModel',
+    label: '工作模型',
+    component: 'Input',
+    bottomHelpMessage: '用于 planner、记忆、话题、表达学习，以及表情包 AI 二次筛选',
+    componentProps: {
+      placeholder: '请输入工作模型名称',
+    },
+  },
+  {
+    field: 'ai.multimodalWorkingModel',
+    label: '多模态模型',
+    component: 'Input',
+    bottomHelpMessage: '用于图片分析、表情包入库和看图描述',
+    componentProps: {
+      placeholder: '请输入多模态模型名称',
+    },
+  },
+  {
+    field: 'ai.isMultimodal',
+    label: '启用多模态',
+    component: 'Switch',
+    bottomHelpMessage: '开启后允许自动分析群聊图片，并在对话中看图',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.nicknames',
+    label: '额外昵称',
+    component: 'Select',
+    bottomHelpMessage: '会与 profile.nickName 合并，作为昵称触发词',
+    componentProps: createTagsSelectProps('请输入昵称'),
+  },
+  {
+    field: 'ai.persona',
+    label: '晶灵人设',
+    component: 'Input',
+    bottomHelpMessage: 'AI 的核心人设提示词，支持直接粘贴长文本',
+    componentProps: {
+      type: 'textarea',
+      rows: 5,
+      placeholder: '请输入人设描述',
     },
   },
   {
     field: 'ai.temperature',
-    label: '聊天温度',
+    label: '主温度',
     component: 'InputNumber',
-    bottomHelpMessage: '温度越高聊天的发散性越高，可选0-2.0',
+    bottomHelpMessage: '主对话温度，越高越发散',
     componentProps: {
       min: 0,
       max: 2,
       step: 0.1,
       precision: 1,
-      placeholder: '请输入温度值，如: 1.2',
+      placeholder: '请输入温度值',
     },
   },
   {
-    field: 'ai.concurrency',
-    label: '最大并发数',
+    field: 'ai.historyCount',
+    label: '历史条数',
     component: 'InputNumber',
-    bottomHelpMessage: '最大同时聊天群数，一个群最多一个人聊天',
+    bottomHelpMessage: '每次注入提示词的历史消息条数',
     componentProps: {
-      min: 1,
-      max: 10,
-      step: 1,
-      placeholder: '请输入最大并发数',
+      min: 10,
+      max: 300,
+      step: 10,
+      placeholder: '请输入历史条数',
     },
   },
   {
-    field: 'ai.maxMix',
-    label: '混合模式阈值',
+    field: 'ai.maxIterations',
+    label: '最大迭代',
     component: 'InputNumber',
-    bottomHelpMessage: '混合模式下，如果用户消息长度大于这个值，那么使用ai回复',
+    bottomHelpMessage: '工具调用最大轮次，-1 表示不限制',
     componentProps: {
-      min: 1,
+      min: -1,
+      max: 20,
       step: 1,
-      placeholder: '请输入消息长度阈值',
-    },
-  },
-  {
-    field: 'ai.timeout',
-    label: '记忆超时时间',
-    component: 'InputNumber',
-    bottomHelpMessage: '记忆默认超时时间(天)',
-    componentProps: {
-      min: 1,
-      max: 365,
-      step: 1,
-      placeholder: '请输入超时天数',
+      placeholder: '请输入最大迭代次数',
     },
   },
   {
     field: 'ai.maxSessions',
-    label: '最大会话数',
+    label: '会话缓存',
     component: 'InputNumber',
-    bottomHelpMessage: '最大同时存在的活跃群聊数量',
+    bottomHelpMessage: '会话缓存上限',
     componentProps: {
       min: 1,
-      max: 50,
+      max: 500,
       step: 1,
       placeholder: '请输入最大会话数',
     },
   },
   {
-    field: 'ai.maxSessionsPerGroup',
-    label: '每群最大会话数',
+    field: 'ai.enableGroupAdmin',
+    label: '群管理工具',
+    component: 'Switch',
+    bottomHelpMessage: '是否允许 AI 调用禁言/踢人等群管理工具',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.cooldownAfterReplyMs',
+    label: '回复冷却',
     component: 'InputNumber',
-    bottomHelpMessage: '每个群最多同时存在的活跃会话数量',
+    bottomHelpMessage: '回复后进入冷却期，期间的新消息会被收集并合并处理',
+    componentProps: {
+      min: 0,
+      max: 300000,
+      step: 1000,
+      placeholder: '请输入冷却毫秒数',
+    },
+  },
+  {
+    field: 'ai.blacklistGroups',
+    label: '黑名单群',
+    component: 'Select',
+    bottomHelpMessage: '这些群不会触发 AI；仍会同时受到 Yunzai 全局黑白名单影响',
+    componentProps: createMultiSelectWithOptions('请选择黑名单群', GROUP_OPTIONS),
+  },
+  {
+    field: 'ai.whitelistGroups',
+    label: '白名单群',
+    component: 'Select',
+    bottomHelpMessage: '非空时仅这些群会触发 AI；仍会同时受到 Yunzai 全局黑白名单影响',
+    componentProps: createMultiSelectWithOptions('请选择白名单群', GROUP_OPTIONS),
+  },
+  {
+    field: 'ai.imageAnalysisBlacklistUsers',
+    label: '看图黑名单',
+    component: 'Select',
+    bottomHelpMessage: '这些 QQ 的消息不会触发自动看图入库和图片分析',
+    componentProps: createMultiSelectWithOptions('请选择QQ号', FRIEND_OPTIONS),
+  },
+  {
+    label: '动态延迟',
+    component: 'SOFT_GROUP_BEGIN'
+  },
+  {
+    field: 'ai.dynamicDelay.enabled',
+    label: '启用动态延迟',
+    component: 'Switch',
+    bottomHelpMessage: '开启后，直接 @Bot 时会根据近期参与互动的人数延迟并合并回复',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.dynamicDelay.interactionWindowMs',
+    label: '互动窗口',
+    component: 'InputNumber',
+    bottomHelpMessage: '统计多少时间内有多少不同用户参与了 @Bot 互动（毫秒）',
+    componentProps: {
+      min: 1000,
+      max: 3600000,
+      step: 1000,
+      placeholder: '请输入窗口时长',
+    },
+  },
+  {
+    field: 'ai.dynamicDelay.baseDelayMs',
+    label: '基础延迟',
+    component: 'InputNumber',
+    bottomHelpMessage: '每多一个活跃互动用户，额外增加的延迟时长（毫秒）',
+    componentProps: {
+      min: 0,
+      max: 600000,
+      step: 1000,
+      placeholder: '请输入基础延迟',
+    },
+  },
+  {
+    field: 'ai.dynamicDelay.maxDelayMs',
+    label: '最大延迟',
+    component: 'InputNumber',
+    bottomHelpMessage: '动态延迟上限（毫秒）',
+    componentProps: {
+      min: 0,
+      max: 3600000,
+      step: 1000,
+      placeholder: '请输入最大延迟',
+    },
+  },
+  {
+    label: '人格与风格',
+    component: 'SOFT_GROUP_BEGIN'
+  },
+  {
+    field: 'ai.personality.states',
+    label: '人格状态',
+    component: 'Select',
+    bottomHelpMessage: '可随机切换的人格状态文案',
+    componentProps: createTagsSelectProps('请输入人格状态'),
+  },
+  {
+    field: 'ai.personality.stateProbability',
+    label: '人格概率',
+    component: 'InputNumber',
+    bottomHelpMessage: '每次生成提示词时，随机切换人格状态的概率',
+    componentProps: {
+      min: 0,
+      max: 1,
+      step: 0.01,
+      precision: 2,
+      placeholder: '请输入概率',
+    },
+  },
+  {
+    field: 'ai.replyStyle.baseStyle',
+    label: '基础风格',
+    component: 'Input',
+    bottomHelpMessage: '默认回复风格，支持直接粘贴长文本',
+    componentProps: {
+      type: 'textarea',
+      rows: 4,
+      placeholder: '请输入基础风格',
+    },
+  },
+  {
+    field: 'ai.replyStyle.multipleStyles',
+    label: '附加风格',
+    component: 'Select',
+    bottomHelpMessage: '可随机注入的一组附加风格',
+    componentProps: createTagsSelectProps('请输入附加风格'),
+  },
+  {
+    field: 'ai.replyStyle.multipleProbability',
+    label: '附加概率',
+    component: 'InputNumber',
+    bottomHelpMessage: '每次生成提示词时，随机附加一种风格的概率',
+    componentProps: {
+      min: 0,
+      max: 1,
+      step: 0.01,
+      precision: 2,
+      placeholder: '请输入概率',
+    },
+  },
+  {
+    label: '记忆 / 话题 / Planner',
+    component: 'SOFT_GROUP_BEGIN'
+  },
+  {
+    field: 'ai.memory.enabled',
+    label: '启用记忆',
+    component: 'Switch',
+    bottomHelpMessage: '是否启用记忆检索',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.memory.maxIterations',
+    label: '记忆轮次',
+    component: 'InputNumber',
+    bottomHelpMessage: '记忆检索最大轮次',
     componentProps: {
       min: 1,
       max: 10,
       step: 1,
-      default: 3,
-      placeholder: '请输入每群最大会话数',
+      placeholder: '请输入最大轮次',
     },
   },
   {
-    field: 'ai.chatHistory',
-    label: '聊天历史长度',
+    field: 'ai.memory.timeoutMs',
+    label: '记忆超时',
     component: 'InputNumber',
-    bottomHelpMessage: '聊天上下文最大长度',
+    bottomHelpMessage: '记忆检索超时（毫秒）',
+    componentProps: {
+      min: 1000,
+      max: 120000,
+      step: 1000,
+      placeholder: '请输入超时毫秒数',
+    },
+  },
+  {
+    field: 'ai.topic.enabled',
+    label: '启用话题',
+    component: 'Switch',
+    bottomHelpMessage: '是否启用话题追踪',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.topic.messageThreshold',
+    label: '话题阈值',
+    component: 'InputNumber',
+    bottomHelpMessage: '累计多少条消息后触发一次话题分析',
+    componentProps: {
+      min: 5,
+      max: 200,
+      step: 1,
+      placeholder: '请输入阈值',
+    },
+  },
+  {
+    field: 'ai.topic.timeThresholdMs',
+    label: '话题间隔',
+    component: 'InputNumber',
+    bottomHelpMessage: '重新分析话题的时间间隔（毫秒）',
+    componentProps: {
+      min: 60000,
+      max: 86400000,
+      step: 60000,
+      placeholder: '请输入时间间隔',
+    },
+  },
+  {
+    field: 'ai.topic.maxTopicsPerSession',
+    label: '最大话题数',
+    component: 'InputNumber',
+    bottomHelpMessage: '提示词中注入的话题数量上限',
+    componentProps: {
+      min: 1,
+      max: 100,
+      step: 1,
+      placeholder: '请输入最大话题数',
+    },
+  },
+  {
+    field: 'ai.planner.enabled',
+    label: '启用Planner',
+    component: 'Switch',
+    bottomHelpMessage: '是否启用回复动作规划器',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.planner.idleThresholdMs',
+    label: '空闲阈值',
+    component: 'InputNumber',
+    bottomHelpMessage: '距离最后一次群内发言超过多久后，才会进入空闲插话候选（毫秒）',
+    componentProps: {
+      min: 60000,
+      max: 86400000,
+      step: 60000,
+      placeholder: '请输入空闲阈值',
+    },
+  },
+  {
+    field: 'ai.planner.idleMessageCount',
+    label: '空闲消息数',
+    component: 'InputNumber',
+    bottomHelpMessage: '自上次 Bot 发言后，至少累计多少条消息才允许空闲插话',
+    componentProps: {
+      min: 1,
+      max: 1000,
+      step: 1,
+      placeholder: '请输入消息数',
+    },
+  },
+  {
+    field: 'ai.planner.idleCheckBotIds',
+    label: '空闲Bot列表',
+    component: 'Select',
+    bottomHelpMessage: '限制哪些 Bot 参与空闲插话；留空表示当前群中所有在线 Bot 都可参与',
+    componentProps: createMultiSelectWithOptions('请选择 Bot', BOT_ID_OPTIONS),
+  },
+  {
+    label: '错别字 / 表情包 / 表达学习',
+    component: 'SOFT_GROUP_BEGIN'
+  },
+  {
+    field: 'ai.typo.enabled',
+    label: '启用错别字',
+    component: 'Switch',
+    bottomHelpMessage: '模拟轻微的真人打字错误',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.typo.errorRate',
+    label: '单字错误率',
+    component: 'InputNumber',
+    bottomHelpMessage: '单字替换概率',
+    componentProps: {
+      min: 0,
+      max: 1,
+      step: 0.01,
+      precision: 2,
+      placeholder: '请输入概率',
+    },
+  },
+  {
+    field: 'ai.typo.wordReplaceRate',
+    label: '整词错误率',
+    component: 'InputNumber',
+    bottomHelpMessage: '整词替换概率',
+    componentProps: {
+      min: 0,
+      max: 1,
+      step: 0.01,
+      precision: 2,
+      placeholder: '请输入概率',
+    },
+  },
+  {
+    field: 'ai.emoji.enabled',
+    label: '启用表情包',
+    component: 'Switch',
+    bottomHelpMessage: '允许 AI 用 [meme:emotion] 发送本地表情包',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.emoji.replyProbability',
+    label: '表情概率',
+    component: 'InputNumber',
+    bottomHelpMessage: '每次构建提示词时，有多大概率告诉 AI 可以发一张表情包',
+    componentProps: {
+      min: 0,
+      max: 1,
+      step: 0.01,
+      precision: 2,
+      placeholder: '请输入概率',
+    },
+  },
+  {
+    field: 'ai.emoji.characters',
+    label: '表情角色',
+    component: 'Select',
+    bottomHelpMessage: '限制可用的表情角色目录；留空则自动扫描 data/chat/meme',
+    componentProps: createTagsSelectProps('请选择或输入角色名', { options: MEME_CHARACTER_OPTIONS }),
+  },
+  {
+    field: 'ai.emoji.availableEmotions',
+    label: '可用情绪',
+    component: 'Select',
+    bottomHelpMessage: '限制 AI 允许使用的表情情绪；留空则按目录自动判断',
+    componentProps: createMultiSelectWithOptions('请选择可用情绪', SUPPORTED_EMOTION_OPTIONS),
+  },
+  {
+    field: 'ai.emoji.useAISelection',
+    label: 'AI筛图',
+    component: 'Switch',
+    bottomHelpMessage: '开启后会让工作模型在候选表情包中二次挑选，关闭则随机选择',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.expression.enabled',
+    label: '启用表达学习',
+    component: 'Switch',
+    bottomHelpMessage: '是否学习群成员表达习惯',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.expression.maxExpressions',
+    label: '最大表达数',
+    component: 'InputNumber',
+    bottomHelpMessage: '每个会话最多保存多少条表达习惯',
+    componentProps: {
+      min: 1,
+      max: 500,
+      step: 1,
+      placeholder: '请输入最大表达数',
+    },
+  },
+  {
+    field: 'ai.expression.sampleSize',
+    label: '注入表达数',
+    component: 'InputNumber',
+    bottomHelpMessage: '每次提示词注入多少条表达习惯',
     componentProps: {
       min: 1,
       max: 50,
       step: 1,
-      placeholder: '请输入聊天历史长度',
+      placeholder: '请输入注入条数',
     },
   },
-  {
-    field: 'ai.maxMessageLength',
-    label: '最大消息长度',
-    component: 'InputNumber',
-    bottomHelpMessage: '处理群消息的最大长度',
-    componentProps: {
-      min: 50,
-      max: 100,
-      step: 10,
-      placeholder: '请输入最大消息长度',
-    },
-  },
-  {
-    field: 'ai.getChatHistoryLength',
-    label: '获取上下文长度',
-    component: 'InputNumber',
-    bottomHelpMessage: '获取到的聊天上下文长度',
-    componentProps: {
-      min: 1,
-      max: 100,
-      step: 1,
-      placeholder: '请输入获取上下文长度',
-    },
-  },
-  {
-    field: 'ai.keywordCache',
-    label: '词库缓存',
-    component: 'Switch',
-    bottomHelpMessage: '是否缓存词库到本地',
-    componentProps: {
-      checkedValue: true,
-      unCheckedValue: false,
-    },
-  },
-  {
-    field: 'ai.botPersona',
-    label: '机器人人设',
-    component: 'InputTextArea',
-    bottomHelpMessage: '机器人的性格和行为描述',
-    componentProps: {
-      rows: 4,
-      placeholder: '请输入机器人人设描述',
-    },
-  },
-  {
-    field: 'ai.character',
-    label: '表情包角色',
-    component: 'Select',
-    bottomHelpMessage: '回复表情包时的角色(能力有限,目前仅支持一种角色qwq)',
-    componentProps: {
-      options: [{ label: '真寻', value: 'zhenxun' }],
-      placeholder: '请选择表情包角色',
-    },
-  },
-  {
-    field: 'ai.multimodalEnabled',
-    label: '多模态模式',
-    component: 'Switch',
-    bottomHelpMessage: '启用后将使用多模态模型',
-    componentProps: {
-      checkedValue: true,
-      unCheckedValue: false,
-    },
-  },
-  {
-    field: 'ai.smartMultimodal',
-    label: '智能多模态',
-    component: 'Switch',
-    bottomHelpMessage: '开启时只有有图片才用多模态模型，其他情况使用默认模型',
-    componentProps: {
-      checkedValue: true,
-      unCheckedValue: false,
-    },
-  },
-  {
-    field: 'ai.multimodalModel',
-    label: '多模态模型',
-    component: 'Input',
-    bottomHelpMessage: '用于多模态处理的模型名称',
-    required: true,
-    componentProps: {
-      placeholder: '请输入多模态模型名称，例如Qwen/Qwen2.5-VL-72B-Instruct',
-    },
-  },
-  {
-    field: 'ai.imageConfig.enabled',
-    label: '图像生成功能',
-    component: 'Switch',
-    bottomHelpMessage: '是否允许ai生成图像',
-    componentProps: {
-      checkedValue: true,
-      unCheckedValue: false,
-    },
-  },
-  {
-    field: 'ai.imageConfig.imageMode',
-    label: '图像生成模式',
-    component: 'Select',
-    bottomHelpMessage:
-      'openai使用/v1/images/generations接口(如Qwen-Image), chat使用对话式生图模型(如gemini-3-pro-image-preview)',
-    componentProps: {
-      options: [
-        { label: 'OpenAI接口', value: 'openai' },
-        { label: '对话式生成', value: 'chat' },
-      ],
-      placeholder: '请选择图像生成模式',
-    },
-  },
-  {
-    field: 'ai.imageConfig.model',
-    label: '图像生成模型',
-    component: 'Input',
-    bottomHelpMessage: '用于图像生成的模型名称',
-    required: true,
-    componentProps: {
-      placeholder: '请输入图像生成模型名称,例如如gemini-3-pro-image-preview',
-    },
-  },
-  {
-    field: 'ai.imageConfig.baseApi',
-    label: '图像API地址',
-    component: 'Input',
-    bottomHelpMessage: '图像生成API基础地址,不加v1',
-    required: true,
-    componentProps: {
-      placeholder: '请输入图像API地址，例如https://api.siliconflow.cn',
-    },
-  },
-  {
-    field: 'ai.imageConfig.apiKey',
-    label: '图像API密钥',
-    component: 'InputPassword',
-    bottomHelpMessage: '用于图像生成的API密钥',
-    required: false,
-    componentProps: {
-      placeholder: '请输入图像API密钥',
-    },
-  },
-  {
-    field: 'ai.imageConfig.timeout',
-    label: '图像生成超时',
-    component: 'InputNumber',
-    bottomHelpMessage: '图像生成超时时间(毫秒)',
-    componentProps: {
-      min: 1000,
-      max: 300000,
-      step: 1000,
-      placeholder: '请输入超时时间(毫秒)',
-    },
-  },
-  {
-    field: 'ai.imageConfig.maxRetries',
-    label: '最大重试次数',
-    component: 'InputNumber',
-    bottomHelpMessage: '图像生成失败时的最大重试次数',
-    componentProps: {
-      min: 0,
-      max: 10,
-      step: 1,
-      placeholder: '请输入最大重试次数',
-    },
-  },
-  {
-    field: 'ai.imageConfig.quality',
-    label: '图像质量',
-    component: 'Select',
-    bottomHelpMessage: '生成图像的质量',
-    componentProps: {
-      options: [
-        { label: '标准', value: 'standard' },
-        { label: '高质量', value: 'high' },
-      ],
-      placeholder: '请选择图像质量',
-    },
-  },
-  {
-    field: 'ai.imageConfig.style',
-    label: '图像风格',
-    component: 'Select',
-    bottomHelpMessage: '生成图像的风格',
-    componentProps: {
-      options: [
-        { label: '自然', value: 'natural' },
-        { label: '生动', value: 'vivid' },
-      ],
-      placeholder: '请选择图像风格',
-    },
-  },
-  {
-    field: 'ai.imageConfig.size',
-    label: '图像尺寸',
-    component: 'Select',
-    bottomHelpMessage: '生成图像的尺寸',
-    componentProps: {
-      options: [
-        { label: '1024x1024', value: '1024x1024' },
-        { label: '1792x1024', value: '1792x1024' },
-        { label: '1024x1792', value: '1024x1792' },
-      ],
-      placeholder: '请选择图像尺寸',
-    },
-  },
-  {
-    field: 'ai.imageConfig.responseFormat',
-    label: '响应格式',
-    component: 'Select',
-    bottomHelpMessage: '图像响应的格式,建议url',
-    componentProps: {
-      options: [
-        { label: 'URL', value: 'url' },
-        { label: 'Base64', value: 'b64_json' },
-      ],
-      placeholder: '请选择响应格式',
-    },
-  },
-  {
-    field: 'ai.blockGroup',
-    label: '禁用群聊',
-    component: 'InputArray',
-    bottomHelpMessage: '黑名单群聊，AI不会在这些群聊中工作',
-    componentProps: {
-      placeholder: '请输入群号，按回车添加',
-    },
-  },
-  {
-    field: 'ai.whiteGroup',
-    label: '白名单群聊',
-    component: 'InputArray',
-    bottomHelpMessage: '白名单群聊，存在时黑名单将被禁用',
-    componentProps: {
-      placeholder: '请输入群号，按回车添加',
-    },
-  },
-  {
-    field: 'ai.codeRenderer.theme',
-    label: '代码主题',
-    component: 'Select',
-    bottomHelpMessage: '代码渲染的主题',
-    componentProps: {
-      options: [
-        { label: 'GitHub', value: 'github' },
-        { label: 'Monokai', value: 'monokai' },
-        { label: 'Dark', value: 'dark' },
-        { label: 'Light', value: 'light' },
-      ],
-      placeholder: '请选择代码主题',
-    },
-  },
-  {
-    field: 'ai.codeRenderer.fontSize',
-    label: '代码字体大小',
-    component: 'InputNumber',
-    bottomHelpMessage: '代码渲染的字体大小',
-    componentProps: {
-      min: 10,
-      max: 24,
-      step: 1,
-      placeholder: '请输入字体大小',
-    },
-  },
-  {
-    field: 'ai.codeRenderer.lineNumbers',
-    label: '显示行号',
-    component: 'Switch',
-    bottomHelpMessage: '是否显示代码行号',
-    componentProps: {
-      checkedValue: true,
-      unCheckedValue: false,
-    },
-  },
-  {
-    field: 'ai.codeRenderer.backgroundColor',
-    label: '背景颜色',
-    component: 'Input',
-    bottomHelpMessage: '代码渲染的背景颜色',
-    componentProps: {
-      placeholder: '请输入背景颜色，如: #f6f8fa',
-    },
-  },
-  {
-    field: 'ai.markdownRenderer.theme',
-    label: 'Markdown主题',
-    component: 'Select',
-    bottomHelpMessage: 'Markdown渲染的主题',
-    componentProps: {
-      options: [
-        { label: '深色', value: 'dark' },
-        { label: '浅色', value: 'light' },
-      ],
-      placeholder: '请选择Markdown主题',
-    },
-  },
-  {
-    field: 'ai.markdownRenderer.fontSize',
-    label: 'Markdown字体大小',
-    component: 'InputNumber',
-    bottomHelpMessage: 'Markdown渲染的字体大小',
-    componentProps: {
-      min: 10,
-      max: 24,
-      step: 1,
-      placeholder: '请输入字体大小',
-    },
-  },
-  {
-    field: 'ai.markdownRenderer.codeTheme',
-    label: '代码主题',
-    component: 'Select',
-    bottomHelpMessage: 'Markdown中代码块的主题',
-    componentProps: {
-      options: [
-        { label: 'GitHub', value: 'github' },
-        { label: 'Monokai', value: 'monokai' },
-        { label: 'Dark', value: 'dark' },
-        { label: 'Light', value: 'light' },
-      ],
-      placeholder: '请选择代码主题',
-    },
-  },
-
   // 60s.json - 60s新闻配置
   {
     label: '60s新闻',
