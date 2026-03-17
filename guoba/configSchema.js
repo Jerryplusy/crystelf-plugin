@@ -447,6 +447,16 @@ const guobaSchema = [
     },
   },
   {
+    field: 'ai.autoImageAnalysis',
+    label: '自动看图',
+    component: 'Switch',
+    bottomHelpMessage: '自动分析群内图片并入库，开启多模态后生效',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
     field: 'ai.nicknames',
     label: '额外昵称',
     component: 'Select',

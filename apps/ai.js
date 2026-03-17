@@ -59,6 +59,7 @@ function withDefaults(aiConfig = {}, profile = {}) {
     workingModel: 'deepseek-ai/DeepSeek-V3.2-Exp',
     multimodalWorkingModel: 'Qwen/Qwen2.5-VL-72B-Instruct',
     isMultimodal: true,
+    autoImageAnalysis: true,
     maxContextTokens: 128,
     temperature: 0.8,
     historyCount: 100,
@@ -573,6 +574,7 @@ async function saveBotMessages(runtimeState, sessionId, event, messages, groupIn
 async function maybeProcessImages(e, runtimeState) {
   if (
     !runtimeState.config.isMultimodal ||
+    !runtimeState.config.autoImageAnalysis ||
     (runtimeState.config.imageAnalysisBlacklistUsers || []).includes(e.user_id)
   ) {
     return;

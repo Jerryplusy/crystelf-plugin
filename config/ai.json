@@ -12,6 +12,8 @@
   "multimodalWorkingModel": "Qwen/Qwen2.5-VL-72B-Instruct",
   "?isMultimodal": "是否启用多模态能力",
   "isMultimodal": true,
+  "?autoImageAnalysis": "是否自动分析群内图片",
+  "autoImageAnalysis": true,
   "?nicknames": "额外触发昵称列表，会自动和 profile.nickName 合并",
   "nicknames": [],
   "?persona": "晶灵的人设提示词",
