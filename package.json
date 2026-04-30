@@ -1,7 +1,7 @@
 {
   "name": "crystelf-plugin",
   "version": "1.0.0",
-  "description": "适配crystelf-core的Yunzai插件",
+  "description": "Yunzai 晶灵插件",
   "main": "index.js",
   "type": "module",
   "scripts": {},

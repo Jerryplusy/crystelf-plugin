@@ -11,14 +11,11 @@ import {
   word8_list,
   word9_list,
 } from '../constants/zwa/wordlist.js';
-import configControl from '../lib/config/configControl.js';
-import axios from 'axios';
 import ConfigControl from '../lib/config/configControl.js';
+import Words from '../lib/core/words.js';
 
-const path = process.cwd();
 const getCurrentHour = () => new Date().getHours();
 let wa = 'https://moe.jitsu.top/img';
-let za = 'https://moe.jitsu.top/img';
 
 export class ZWA extends plugin {
   constructor() {
@@ -53,13 +50,8 @@ export class ZWA extends plugin {
         });
       } else {
         try {
-          const coreUrl = configControl.get(`coreConfig`)?.coreUrl;
-          const targetUrl = `${coreUrl}/api/words/getText`;
-          let response = await axios.post(targetUrl, {
-            type: 'MN-hello',
-            id: 'good-night',
-          });
-          await this.reply([response.data.data, segment.image(wa)], true);
+          const text = await Words.getWord('MN-hello', 'good-night');
+          await this.reply([text, segment.image(wa)], true);
         } catch (error) {
           logger.error(`[crystelf-plugin]早晚安出现错误：${error}`);
         }
@@ -72,13 +64,8 @@ export class ZWA extends plugin {
         });
       } else {
         try {
-          const coreUrl = configControl.get(`coreConfig`)?.coreUrl;
-          const targetUrl = `${coreUrl}/api/words/getText`;
-          let response = await axios.post(targetUrl, {
-            type: 'MN-hello',
-            id: 'good-night',
-          });
-          await this.reply([response.data.data, segment.image(wa)], true);
+          const text = await Words.getWord('MN-hello', 'good-night');
+          await this.reply([text, segment.image(wa)], true);
         } catch (error) {
           logger.error(`[crystelf-plugin]早晚安出现错误：${error}`);
         }
@@ -123,13 +110,8 @@ export class ZWA extends plugin {
         });
       } else {
         try {
-          const coreUrl = configControl.get(`coreConfig`)?.coreUrl;
-          const targetUrl = `${coreUrl}/api/words/getText`;
-          let response = await axios.post(targetUrl, {
-            type: 'MN-hello',
-            id: 'good-morning',
-          });
-          await this.reply([response.data.data, segment.image(wa)], true);
+          const text = await Words.getWord('MN-hello', 'good-morning');
+          await this.reply([text, segment.image(wa)], true);
         } catch (error) {
           logger.error(`[crystelf-plugin]早晚安出现错误:${error}`);
         }

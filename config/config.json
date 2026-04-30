@@ -1,7 +1,5 @@
 {
   "debug": true,
-  "?core": "是否启用晶灵核心相关功能",
-  "core": true,
   "?maxFeed": "最长订阅",
   "maxFeed": 10,
   "?autoUpdate": "是否自动更新插件",

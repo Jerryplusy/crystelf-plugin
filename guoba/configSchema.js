@@ -138,16 +138,6 @@ const guobaSchema = [
     },
   },
   {
-    field: 'config.core',
-    label: '晶灵核心',
-    component: 'Switch',
-    bottomHelpMessage: '是否启用晶灵核心相关功能',
-    componentProps: {
-      checkedValue: true,
-      unCheckedValue: false,
-    },
-  },
-  {
     field: 'config.maxFeed',
     label: '最长订阅',
     component: 'InputNumber',
@@ -267,31 +257,6 @@ const guobaSchema = [
     componentProps: {
       checkedValue: true,
       unCheckedValue: false,
-    },
-  },
-
-  // coreConfig.json - 核心配置
-  {
-    label: '晶灵核心配置',
-    component: 'SOFT_GROUP_BEGIN',
-  },
-  {
-    field: 'coreConfig.coreUrl',
-    label: '核心API地址',
-    component: 'Input',
-    bottomHelpMessage: '晶灵核心API地址',
-    componentProps: {
-      placeholder: '请输入核心API地址',
-    },
-  },
-  {
-    field: 'coreConfig.token',
-    label: '核心Token',
-    component: 'InputPassword',
-    required: false,
-    bottomHelpMessage: '晶灵核心可选访问Token',
-    componentProps: {
-      placeholder: '请输入核心Token',
     },
   },
 

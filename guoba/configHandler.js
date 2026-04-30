@@ -347,13 +347,6 @@ function validateConfig(configType, config = null) {
       }
       break;
 
-    case 'coreConfig':
-      // 验证核心配置
-      if (!config.coreUrl) {
-        errors.push('核心url不能为空');
-      }
-      break;
-
     default:
       // 通用验证
       break;

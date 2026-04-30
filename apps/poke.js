@@ -1,8 +1,8 @@
 import cfg from '../../../lib/config/config.js';
 import tool from '../components/tool.js';
-import axios from 'axios';
 import configControl from '../lib/config/configControl.js';
 import ConfigControl from '../lib/config/configControl.js';
+import Words from '../lib/core/words.js';
 import Group from '../lib/yunzai/group.js';
 
 export default class ChuochuoPlugin extends plugin {
@@ -60,27 +60,14 @@ async function handleBotPoke(e) {
   try {
     const replyPoke = configControl.get('poke')?.replyPoke;
     const nickName = configControl.get('profile')?.nickName;
-    const coreUrl = configControl.get(`coreConfig`)?.coreUrl;
-    const targetUrl = `${coreUrl}/api/words/getText`;
-    const res = await axios.post(targetUrl, {
-      type: 'poke',
-      id: 'poke',
-      name: nickName,
-    });
-    if (res.data.success) {
-      await e.reply(res.data.data, false, 110);
-      if (Math.random() < replyPoke) {
-        await tool.sleep(1000);
-        return await Group.groupPoke(e, e.operator_id, e.group_id);
-      }
-      return true;
-    } else {
-      return await e.reply(
-        `戳一戳出错了!${configControl.get('profile')?.nickName}不知道该说啥好了..`,
-        false,
-        { recallMsg: 60 }
-      );
+    const text = await Words.getWord('poke', 'poke', { name: nickName });
+
+    await e.reply(text, false, 110);
+    if (Math.random() < replyPoke) {
+      await tool.sleep(1000);
+      return await Group.groupPoke(e, e.operator_id, e.group_id);
     }
+    return true;
   } catch (err) {
     logger.error('戳一戳请求失败', err);
     return await e.reply(

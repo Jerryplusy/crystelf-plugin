@@ -7,12 +7,6 @@
     ```bash
     git clone --depth=1 https://github.com/Jerryplusy/crystelf-plugin ./plugins/crystelf-plugin
     ```
-  
-- 使用 Crystelf-Gitea镜像 (更新可能滞后)  
-    ```bash
-    git clone --depth=1 https://git.crystelf.top/Jerry/crystelf-plugin ./plugins/crystelf-plugin
-    ```
-
 
 ### 安装依赖  
 在`Yunzai`根目录下执行:  
@@ -62,7 +56,7 @@
 <details>
 <summary>戳一戳功能</summary>
 
-- 开启本功能后戳一戳bot会调用晶灵核心的戳一戳词库进行回复
+- 开启本功能后戳一戳bot会从插件内置词库随机回复
 </details>
 <details>
 <summary>rss订阅及推送</summary>
@@ -75,7 +69,7 @@
 <details>
 <summary>早晚安</summary>
 
-- 在群里正常的发送早晚安时,插件会调用晶灵智能的早晚安api获取文案进行回复
+- 在群里正常的发送早晚安时,插件会从插件内置词库随机回复
 - `早安`
 - `晚安`
 
@@ -104,8 +98,7 @@
 支持功能:  
 - [X] 自定义人设  
 - [X] 自动调整回复长度及自动分段发送  
-- [X] 发送聊天消息时决定是否引用及是否@  
-- [X] 根据语境发送表情包 (需要晶灵核心)  
+- [X] 发送聊天消息时决定是否引用及是否@ 
 - [X] 戳一戳别人  
 - [X] 代码高亮渲染  
 - [X] Markdown渲染  
@@ -136,12 +129,6 @@
 ## **本插件已适配锅巴,请务必使用锅巴进行插件配置**  
 
 **请不要修改插件目录下 `config` 文件夹中的文件**
-
-## 关于晶灵核心  
-晶灵核心是一个开源的api服务,使用nestjs框架编写,本插件部分功能依赖于晶灵核心,如戳一戳,早晚安,晶灵智能等.  
-其中,全部功能都可以使用官方提供的api进行操作,如果部分地区被墙或速度过慢,可以参考教程自行部署晶灵核心.  
-晶灵核心及文案等数据均开源,但表情数据及图片为闭源不公开,如自行部署需要考虑表情问题(如自行收集表情包存于相关目录下).  
-自行搭建请前往[晶灵核心仓库](https://github.com/crystelf/crystelf-core)
 
 ## 关于兼容性
 | 框架/适配器          | 是否适配   |
