@@ -24,8 +24,6 @@
   "temperature": 0.8,
   "?historyCount": "保留的会话消息条数",
   "historyCount": 100,
-  "?maxIterations": "工具调用最大迭代次数，-1 为不限制",
-  "maxIterations": 8,
   "?blacklistGroups": "禁用群聊（黑名单）",
   "blacklistGroups": [],
   "?whitelistGroups": "白名单群聊，非空时优先于黑名单",
@@ -36,6 +34,20 @@
   "maxSessions": 100,
   "?enableGroupAdmin": "是否开放群管理工具（需要 bot 本身有管理员权限）",
   "enableGroupAdmin": true,
+  "?enablePromptCacheOptimization": "是否启用前缀缓存友好的提示词排序",
+  "enablePromptCacheOptimization": false,
+  "?enableTypingDelay": "是否启用打字延迟",
+  "enableTypingDelay": false,
+  "?typingDelayMaxTotalMs": "单次回复最多累计等待的打字延迟毫秒数",
+  "typingDelayMaxTotalMs": 10000,
+  "?enableMarkdownScreenshot": "是否启用MarkDown渲染为图片发送",
+  "enableMarkdownScreenshot": true,
+  "?outputLengthConstraintStrength": "回复长度约束强度：low / medium / high",
+  "outputLengthConstraintStrength": "medium",
+  "?emojiUsageConstraintStrength": "表情包使用强度：low / medium / high",
+  "emojiUsageConstraintStrength": "medium",
+  "?markdownUsageConstraintStrength": "Markdown 渲染使用强度：low / medium / high",
+  "markdownUsageConstraintStrength": "medium",
   "?cooldownAfterReplyMs": "每次回复后的冷却时间，冷却期内的新触发会合并为 review 回复",
   "cooldownAfterReplyMs": 20000,
   "?dynamicDelay": "动态延迟配置（直接@时会根据近期互动人数延迟并合并回复）",
@@ -75,25 +87,14 @@
     "?multipleProbability": "启用额外风格的概率",
     "multipleProbability": 0.2
   },
-  "?memory": "记忆检索配置",
-  "memory": {
-    "?enabled": "是否启用记忆检索",
-    "enabled": true,
-    "?maxIterations": "记忆检索的最大 ReAct 轮数",
-    "maxIterations": 3,
-    "?timeoutMs": "记忆检索超时（毫秒）",
-    "timeoutMs": 15000
-  },
   "?topic": "话题追踪配置",
   "topic": {
     "?enabled": "是否启用话题追踪",
     "enabled": true,
-    "?messageThreshold": "累计多少条消息后触发一次话题分析",
-    "messageThreshold": 50,
-    "?timeThresholdMs": "超过多长时间重新分析一次",
-    "timeThresholdMs": 28800000,
-    "?maxTopicsPerSession": "提示词中最多注入的话题数量",
-    "maxTopicsPerSession": 20
+    "?windowHours": "话题总结时间窗口（小时）",
+    "windowHours": 5,
+    "?historyWindowCount": "提示词中注入多少个可见历史之前的话题窗口",
+    "historyWindowCount": 3
   },
   "?planner": "动作规划器配置",
   "planner": {
@@ -122,9 +123,7 @@
     "?replyProbability": "每次构建提示词时，有多大概率告诉 AI 可以发表情包",
     "replyProbability": 0.3,
     "?characters": "可用角色列表",
-    "characters": [
-      "zhenxun"
-    ],
+    "characters": ["zhenxun"],
     "?availableEmotions": "限制 AI 允许使用的表情情绪；留空则按目录自动判断",
     "availableEmotions": [
       "happy",
@@ -149,9 +148,9 @@
   "expression": {
     "?enabled": "是否启用表达学习",
     "enabled": true,
-    "?maxExpressions": "每个会话最多保留多少条表达习惯",
-    "maxExpressions": 100,
+    "?learnAfterMessages": "每个用户累计多少条消息后学习一次表达习惯",
+    "learnAfterMessages": 100,
     "?sampleSize": "每次向提示词注入多少条表达习惯",
-    "sampleSize": 8
+    "sampleSize": 3
   }
 }

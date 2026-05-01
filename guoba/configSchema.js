@@ -18,6 +18,11 @@ const SUPPORTED_EMOTION_OPTIONS = [
   'neutral',
 ].map((value) => ({ label: value, value }));
 
+const CONSTRAINT_STRENGTH_OPTIONS = ['low', 'medium', 'high'].map((value) => ({
+  label: value,
+  value,
+}));
+
 function normalizeNumber(value) {
   const num = Number.parseInt(value, 10);
   return Number.isFinite(num) ? num : null;
@@ -465,18 +470,6 @@ const guobaSchema = [
     },
   },
   {
-    field: 'ai.maxIterations',
-    label: '最大迭代',
-    component: 'InputNumber',
-    bottomHelpMessage: '工具调用最大轮次，-1 表示不限制',
-    componentProps: {
-      min: -1,
-      max: 20,
-      step: 1,
-      placeholder: '请输入最大迭代次数',
-    },
-  },
-  {
     field: 'ai.maxSessions',
     label: '会话缓存',
     component: 'InputNumber',
@@ -496,6 +489,78 @@ const guobaSchema = [
     componentProps: {
       checkedValue: true,
       unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.enablePromptCacheOptimization',
+    label: '前缀缓存优化',
+    component: 'Switch',
+    bottomHelpMessage: '开启后将稳定提示词前置、动态上下文后置以提高 DeepSeek 前缀缓存命中；关闭时使用原来的注入顺序',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.enableTypingDelay',
+    label: '打字延迟',
+    component: 'Switch',
+    bottomHelpMessage: '发送多条消息时模拟真人打字等待',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.typingDelayMaxTotalMs',
+    label: '最大打字延迟',
+    component: 'InputNumber',
+    bottomHelpMessage: '单次回复最多累计等待的打字延迟毫秒数',
+    componentProps: {
+      min: 0,
+      max: 60000,
+      step: 1000,
+      placeholder: '请输入最大延迟',
+    },
+  },
+  {
+    field: 'ai.enableMarkdownScreenshot',
+    label: 'Markdown截图',
+    component: 'Switch',
+    bottomHelpMessage: '允许 AI 使用 <MARKDOWN>...</MARKDOWN> 渲染为图片发送',
+    componentProps: {
+      checkedValue: true,
+      unCheckedValue: false,
+    },
+  },
+  {
+    field: 'ai.outputLengthConstraintStrength',
+    label: '长度约束',
+    component: 'Select',
+    bottomHelpMessage: '控制提示词对回复长度的约束强度',
+    componentProps: {
+      options: CONSTRAINT_STRENGTH_OPTIONS,
+      placeholder: '请选择强度',
+    },
+  },
+  {
+    field: 'ai.emojiUsageConstraintStrength',
+    label: '表情强度',
+    component: 'Select',
+    bottomHelpMessage: '控制 AI 使用表情包的积极程度',
+    componentProps: {
+      options: CONSTRAINT_STRENGTH_OPTIONS,
+      placeholder: '请选择强度',
+    },
+  },
+  {
+    field: 'ai.markdownUsageConstraintStrength',
+    label: 'Markdown强度',
+    component: 'Select',
+    bottomHelpMessage: '控制 AI 使用 Markdown 截图的积极程度',
+    componentProps: {
+      options: CONSTRAINT_STRENGTH_OPTIONS,
+      placeholder: '请选择强度',
     },
   },
   {
@@ -637,42 +702,8 @@ const guobaSchema = [
     },
   },
   {
-    label: '记忆 / 话题 / Planner',
+    label: '话题 / Planner',
     component: 'SOFT_GROUP_BEGIN'
-  },
-  {
-    field: 'ai.memory.enabled',
-    label: '启用记忆',
-    component: 'Switch',
-    bottomHelpMessage: '是否启用记忆检索',
-    componentProps: {
-      checkedValue: true,
-      unCheckedValue: false,
-    },
-  },
-  {
-    field: 'ai.memory.maxIterations',
-    label: '记忆轮次',
-    component: 'InputNumber',
-    bottomHelpMessage: '记忆检索最大轮次',
-    componentProps: {
-      min: 1,
-      max: 10,
-      step: 1,
-      placeholder: '请输入最大轮次',
-    },
-  },
-  {
-    field: 'ai.memory.timeoutMs',
-    label: '记忆超时',
-    component: 'InputNumber',
-    bottomHelpMessage: '记忆检索超时（毫秒）',
-    componentProps: {
-      min: 1000,
-      max: 120000,
-      step: 1000,
-      placeholder: '请输入超时毫秒数',
-    },
   },
   {
     field: 'ai.topic.enabled',
@@ -685,39 +716,27 @@ const guobaSchema = [
     },
   },
   {
-    field: 'ai.topic.messageThreshold',
-    label: '话题阈值',
+    field: 'ai.topic.windowHours',
+    label: '话题窗口',
     component: 'InputNumber',
-    bottomHelpMessage: '累计多少条消息后触发一次话题分析',
-    componentProps: {
-      min: 5,
-      max: 200,
-      step: 1,
-      placeholder: '请输入阈值',
-    },
-  },
-  {
-    field: 'ai.topic.timeThresholdMs',
-    label: '话题间隔',
-    component: 'InputNumber',
-    bottomHelpMessage: '重新分析话题的时间间隔（毫秒）',
-    componentProps: {
-      min: 60000,
-      max: 86400000,
-      step: 60000,
-      placeholder: '请输入时间间隔',
-    },
-  },
-  {
-    field: 'ai.topic.maxTopicsPerSession',
-    label: '最大话题数',
-    component: 'InputNumber',
-    bottomHelpMessage: '提示词中注入的话题数量上限',
+    bottomHelpMessage: '按多少小时一个窗口总结群聊话题',
     componentProps: {
       min: 1,
-      max: 100,
+      max: 24,
       step: 1,
-      placeholder: '请输入最大话题数',
+      placeholder: '请输入小时数',
+    },
+  },
+  {
+    field: 'ai.topic.historyWindowCount',
+    label: '历史窗口数',
+    component: 'InputNumber',
+    bottomHelpMessage: '提示词中注入多少个可见历史之前的话题窗口摘要',
+    componentProps: {
+      min: 1,
+      max: 12,
+      step: 1,
+      placeholder: '请输入窗口数',
     },
   },
   {
@@ -859,15 +878,15 @@ const guobaSchema = [
     },
   },
   {
-    field: 'ai.expression.maxExpressions',
-    label: '最大表达数',
+    field: 'ai.expression.learnAfterMessages',
+    label: '学习阈值',
     component: 'InputNumber',
-    bottomHelpMessage: '每个会话最多保存多少条表达习惯',
+    bottomHelpMessage: '每个用户累计多少条消息后学习一次表达习惯',
     componentProps: {
       min: 1,
       max: 500,
       step: 1,
-      placeholder: '请输入最大表达数',
+      placeholder: '请输入消息数',
     },
   },
   {
