@@ -282,10 +282,6 @@ function validateConfig(configType, config = null) {
         errors.push('温度值必须在0-2之间');
       }
 
-      if (config.maxIterations !== undefined && config.maxIterations < -1) {
-        errors.push('最大迭代次数不能小于-1');
-      }
-
       if (config.historyCount !== undefined && (config.historyCount < 1 || config.historyCount > 500)) {
         errors.push('历史条数必须在1-500之间');
       }
