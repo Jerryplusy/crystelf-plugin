@@ -63,12 +63,18 @@ function withDefaults(aiConfig = {}, profile = {}) {
     maxContextTokens: 128,
     temperature: 0.8,
     historyCount: 100,
-    maxIterations: 8,
     blacklistGroups: [],
     whitelistGroups: [],
     imageAnalysisBlacklistUsers: [],
     maxSessions: 100,
     enableGroupAdmin: true,
+    enablePromptCacheOptimization: false,
+    enableTypingDelay: false,
+    typingDelayMaxTotalMs: 10_000,
+    enableMarkdownScreenshot: true,
+    outputLengthConstraintStrength: 'medium',
+    emojiUsageConstraintStrength: 'medium',
+    markdownUsageConstraintStrength: 'medium',
     cooldownAfterReplyMs: 20_000,
     dynamicDelay: {
       enabled: true,
@@ -98,16 +104,10 @@ function withDefaults(aiConfig = {}, profile = {}) {
       ],
       multipleProbability: 0.2,
     },
-    memory: {
-      enabled: true,
-      maxIterations: 3,
-      timeoutMs: 15000,
-    },
     topic: {
       enabled: true,
-      messageThreshold: 50,
-      timeThresholdMs: 8 * 3600_000,
-      maxTopicsPerSession: 20,
+      windowHours: 5,
+      historyWindowCount: 3,
     },
     planner: {
       enabled: true,
@@ -144,8 +144,8 @@ function withDefaults(aiConfig = {}, profile = {}) {
     },
     expression: {
       enabled: true,
-      maxExpressions: 100,
-      sampleSize: 8,
+      learnAfterMessages: 100,
+      sampleSize: 3,
     },
     nicknames: [],
     ...aiConfig,
@@ -533,18 +533,17 @@ function saveIncomingMessage(e, sessionId, storedText, runtimeState) {
 }
 
 async function getHumanizeContexts(runtimeState, sessionId, targetMessage, history) {
-  const memoryContext = await runtimeState.humanize.memoryRetrieval.retrieve(
-    sessionId,
-    targetMessage.content,
-    targetMessage.userName,
-    history
-  );
+  const historyStartAt = history.length > 0 ? history[0].timestamp : undefined;
 
   return {
-    memoryContext: memoryContext || undefined,
-    topicContext: runtimeState.humanize.topicTracker.getTopicContext(sessionId) || undefined,
-    expressionContext:
-      runtimeState.humanize.expressionLearner.getExpressionContext(sessionId) || undefined,
+    topicContext:
+      runtimeState.humanize.topicTracker.getTopicContext(sessionId, historyStartAt) || undefined,
+    expressionContext: targetMessage.userId
+      ? runtimeState.humanize.expressionLearner.getExpressionContextForUser(
+          targetMessage.userId,
+          targetMessage.userName
+        ) || undefined
+      : undefined,
   };
 }
 
