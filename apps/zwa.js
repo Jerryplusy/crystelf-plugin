@@ -15,7 +15,10 @@ import ConfigControl from '../lib/config/configControl.js';
 import Words from '../lib/core/words.js';
 
 const getCurrentHour = () => new Date().getHours();
-let wa = 'https://moe.jitsu.top/img';
+
+const getImageApi = () => {
+  return ConfigControl.get()?.morning?.imageApi || 'https://uapis.cn/api/v1/random/image?category=acg&type=pc';
+};
 
 export class ZWA extends plugin {
   constructor() {
@@ -46,12 +49,12 @@ export class ZWA extends plugin {
       if (e.isMaster) {
         let text_number = Math.ceil(Math.random() * word2_list['length']);
         setTimeout(async () => {
-          e.reply([word2_list[text_number - 1], segment.image(wa)], true);
+          e.reply([word2_list[text_number - 1], segment.image(getImageApi())], true);
         });
       } else {
         try {
           const text = await Words.getWord('MN-hello', 'good-night');
-          await this.reply([text, segment.image(wa)], true);
+          await this.reply([text, segment.image(getImageApi())], true);
         } catch (error) {
           logger.error(`[crystelf-plugin]早晚安出现错误：${error}`);
         }
@@ -60,12 +63,12 @@ export class ZWA extends plugin {
       if (e.isMaster) {
         let text_number = Math.ceil(Math.random() * word2_list['length']);
         setTimeout(async () => {
-          e.reply([word2_list[text_number - 1], segment.image(wa)], true);
+          e.reply([word2_list[text_number - 1], segment.image(getImageApi())], true);
         });
       } else {
         try {
           const text = await Words.getWord('MN-hello', 'good-night');
-          await this.reply([text, segment.image(wa)], true);
+          await this.reply([text, segment.image(getImageApi())], true);
         } catch (error) {
           logger.error(`[crystelf-plugin]早晚安出现错误：${error}`);
         }
@@ -74,7 +77,7 @@ export class ZWA extends plugin {
       if (e.isMaster) {
         let text_number = Math.ceil(Math.random() * word7_list['length']);
         setTimeout(async () => {
-          e.reply([word7_list[text_number - 1], segment.image(wa)], true);
+          e.reply([word7_list[text_number - 1], segment.image(getImageApi())], true);
         });
       } else {
         let text_number = Math.ceil(Math.random() * word8_list['length']);
@@ -106,12 +109,12 @@ export class ZWA extends plugin {
       if (e.isMaster) {
         let text_number = Math.ceil(Math.random() * word3_list['length']);
         setTimeout(async () => {
-          e.reply([word3_list[text_number - 1], segment.image(wa)], true);
+          e.reply([word3_list[text_number - 1], segment.image(getImageApi())], true);
         });
       } else {
         try {
           const text = await Words.getWord('MN-hello', 'good-morning');
-          await this.reply([text, segment.image(wa)], true);
+          await this.reply([text, segment.image(getImageApi())], true);
         } catch (error) {
           logger.error(`[crystelf-plugin]早晚安出现错误:${error}`);
         }
@@ -120,7 +123,7 @@ export class ZWA extends plugin {
       if (e.isMaster) {
         let text_number = Math.ceil(Math.random() * word10_list['length']);
         setTimeout(async () => {
-          e.reply([word10_list[text_number - 1], segment.image(wa)], true);
+          e.reply([word10_list[text_number - 1], segment.image(getImageApi())], true);
         });
       } else {
         let text_number = Math.ceil(Math.random() * word5_list['length']);

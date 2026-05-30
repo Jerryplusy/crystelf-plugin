@@ -578,16 +578,24 @@ const guobaSchema = [
   {
     field: 'ai.blacklistGroups',
     label: '黑名单群',
-    component: 'Select',
+    component: 'GSelectGroup',
+    componentProps: {
+      placeholder: '请选择黑名单群',
+      mode: 'multiple',
+    },
+    defaultValue: [],
     bottomHelpMessage: '这些群不会触发 AI；仍会同时受到 Yunzai 全局黑白名单影响',
-    componentProps: createMultiSelectWithOptions('请选择黑名单群', GROUP_OPTIONS),
   },
   {
     field: 'ai.whitelistGroups',
     label: '白名单群',
-    component: 'Select',
+    component: 'GSelectGroup',
+    componentProps: {
+      placeholder: '请选择白名单群',
+      mode: 'multiple',
+    },
+    defaultValue: [],
     bottomHelpMessage: '非空时仅这些群会触发 AI；仍会同时受到 Yunzai 全局黑白名单影响',
-    componentProps: createMultiSelectWithOptions('请选择白名单群', GROUP_OPTIONS),
   },
   {
     field: 'ai.imageAnalysisBlacklistUsers',
@@ -948,6 +956,21 @@ const guobaSchema = [
     bottomHelpMessage: '音乐API密码',
     componentProps: {
       placeholder: '请输入音乐API密码',
+    },
+  },
+
+  // morning.json - 早晚安图片配置
+  {
+    label: '早晚安图片',
+    component: 'SOFT_GROUP_BEGIN',
+  },
+  {
+    field: 'morning.imageApi',
+    label: '早晚安图片API',
+    component: 'Input',
+    bottomHelpMessage: '早晚安发送的图片API地址',
+    componentProps: {
+      placeholder: '请输入早晚安图片API地址',
     },
   },
 
