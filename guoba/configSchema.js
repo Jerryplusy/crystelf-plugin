@@ -951,6 +951,21 @@ const guobaSchema = [
     },
   },
 
+  // morning.json - 早晚安图片配置
+  {
+    label: '早晚安图片',
+    component: 'SOFT_GROUP_BEGIN',
+  },
+  {
+    field: 'morning.imageApi',
+    label: '早晚安图片API',
+    component: 'Input',
+    bottomHelpMessage: '早晚安发送的图片API地址',
+    componentProps: {
+      placeholder: '请输入早晚安图片API地址',
+    },
+  },
+
   // poke.json - 戳一戳配置
   {
     label: '戳一戳',
